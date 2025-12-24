@@ -2,17 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/layout/Navbar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,15 +31,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Plus,
-  Clock,
   User,
   Scissors,
   Calendar,
   X,
+  Settings,
+  CalendarOff,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { WorkHoursManager } from "@/components/admin/WorkHoursManager";
+import { BlockedTimesCalendar } from "@/components/admin/BlockedTimesCalendar";
 
 interface ProfileInfo {
   full_name: string;
@@ -72,6 +71,7 @@ const SERVICE_COLORS: Record<string, string> = {
 };
 
 type ViewMode = "month" | "week" | "day";
+type AdminTab = "appointments" | "work-hours" | "blocked-times";
 
 export default function AdminPage() {
   const { user, isAdmin, isLoading: authLoading } = useAuth();
@@ -79,16 +79,10 @@ export default function AdminPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [activeTab, setActiveTab] = useState<AdminTab>("appointments");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
-  const [blockTimeDialog, setBlockTimeDialog] = useState(false);
-  const [blockTimeData, setBlockTimeData] = useState({
-    date: "",
-    startTime: "",
-    endTime: "",
-    reason: "",
-  });
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -154,50 +148,6 @@ export default function AdminPage() {
       })) as AppointmentWithDetails[];
     },
     enabled: !!user && isAdmin,
-  });
-
-  // Fetch blocked times
-  const { data: blockedTimes = [] } = useQuery({
-    queryKey: ["admin-blocked-times", currentDate.toISOString()],
-    queryFn: async () => {
-      const startDate = startOfMonth(currentDate);
-      const endDate = endOfMonth(currentDate);
-
-      const { data, error } = await supabase
-        .from("blocked_times")
-        .select("*")
-        .gte("start_time", startDate.toISOString())
-        .lte("start_time", endDate.toISOString());
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && isAdmin,
-  });
-
-  // Block time mutation
-  const blockTimeMutation = useMutation({
-    mutationFn: async () => {
-      const startTime = new Date(`${blockTimeData.date}T${blockTimeData.startTime}`);
-      const endTime = new Date(`${blockTimeData.date}T${blockTimeData.endTime}`);
-
-      const { error } = await supabase.from("blocked_times").insert({
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
-        reason: blockTimeData.reason || null,
-      });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({ title: "Time blocked successfully" });
-      setBlockTimeDialog(false);
-      setBlockTimeData({ date: "", startTime: "", endTime: "", reason: "" });
-      queryClient.invalidateQueries({ queryKey: ["admin-blocked-times"] });
-    },
-    onError: () => {
-      toast({ title: "Failed to block time", variant: "destructive" });
-    },
   });
 
   // Cancel appointment mutation
@@ -383,168 +333,119 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Admin Calendar</h1>
-            <p className="text-muted-foreground">Manage all appointments</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Dialog open={blockTimeDialog} onOpenChange={setBlockTimeDialog}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Plus className="h-4 w-4" />
-                  Block Time
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Block Time</DialogTitle>
-                  <DialogDescription>
-                    Block off time for breaks or personal appointments
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 mt-4">
-                  <div>
-                    <Label>Date</Label>
-                    <Input
-                      type="date"
-                      value={blockTimeData.date}
-                      onChange={(e) =>
-                        setBlockTimeData({ ...blockTimeData, date: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Start Time</Label>
-                      <Input
-                        type="time"
-                        value={blockTimeData.startTime}
-                        onChange={(e) =>
-                          setBlockTimeData({ ...blockTimeData, startTime: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label>End Time</Label>
-                      <Input
-                        type="time"
-                        value={blockTimeData.endTime}
-                        onChange={(e) =>
-                          setBlockTimeData({ ...blockTimeData, endTime: e.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Reason (optional)</Label>
-                    <Input
-                      value={blockTimeData.reason}
-                      onChange={(e) =>
-                        setBlockTimeData({ ...blockTimeData, reason: e.target.value })
-                      }
-                      placeholder="e.g., Lunch break"
-                    />
-                  </div>
-                  <Button
-                    className="w-full"
-                    variant="hero"
-                    onClick={() => blockTimeMutation.mutate()}
-                    disabled={
-                      !blockTimeData.date ||
-                      !blockTimeData.startTime ||
-                      !blockTimeData.endTime ||
-                      blockTimeMutation.isPending
-                    }
-                  >
-                    {blockTimeMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Block Time"
-                    )}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Manage appointments, work hours, and blocked times</p>
           </div>
         </div>
 
-        {/* Calendar Controls */}
-        <Card variant="elevated" className="mb-6">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    setCurrentDate(
-                      viewMode === "month"
-                        ? subMonths(currentDate, 1)
-                        : viewMode === "week"
-                        ? addDays(currentDate, -7)
-                        : addDays(currentDate, -1)
-                    )
-                  }
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <h2 className="text-xl font-semibold min-w-[200px] text-center">
-                  {viewMode === "month"
-                    ? format(currentDate, "MMMM yyyy")
-                    : viewMode === "week"
-                    ? `Week of ${format(startOfWeek(currentDate), "MMM d")}`
-                    : format(currentDate, "EEEE, MMMM d, yyyy")}
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    setCurrentDate(
-                      viewMode === "month"
-                        ? addMonths(currentDate, 1)
-                        : viewMode === "week"
-                        ? addDays(currentDate, 7)
-                        : addDays(currentDate, 1)
-                    )
-                  }
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AdminTab)}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="appointments" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Appointments
+            </TabsTrigger>
+            <TabsTrigger value="work-hours" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Work Hours
+            </TabsTrigger>
+            <TabsTrigger value="blocked-times" className="flex items-center gap-2">
+              <CalendarOff className="h-4 w-4" />
+              Block Times
+            </TabsTrigger>
+          </TabsList>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={viewMode === "month" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("month")}
-                >
-                  Month
-                </Button>
-                <Button
-                  variant={viewMode === "day" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("day")}
-                >
-                  Day
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentDate(new Date())}
-                >
-                  Today
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Appointments Tab */}
+          <TabsContent value="appointments">
+            {/* Calendar Controls */}
+            <Card variant="elevated" className="mb-6">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setCurrentDate(
+                          viewMode === "month"
+                            ? subMonths(currentDate, 1)
+                            : viewMode === "week"
+                            ? addDays(currentDate, -7)
+                            : addDays(currentDate, -1)
+                        )
+                      }
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <h2 className="text-xl font-semibold min-w-[200px] text-center">
+                      {viewMode === "month"
+                        ? format(currentDate, "MMMM yyyy")
+                        : viewMode === "week"
+                        ? `Week of ${format(startOfWeek(currentDate), "MMM d")}`
+                        : format(currentDate, "EEEE, MMMM d, yyyy")}
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setCurrentDate(
+                          viewMode === "month"
+                            ? addMonths(currentDate, 1)
+                            : viewMode === "week"
+                            ? addDays(currentDate, 7)
+                            : addDays(currentDate, 1)
+                        )
+                      }
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
 
-        {/* Calendar View */}
-        <Card variant="elevated">
-          <CardContent className="p-6">
-            {viewMode === "month" ? renderMonthView() : renderDayView()}
-          </CardContent>
-        </Card>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={viewMode === "month" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("month")}
+                    >
+                      Month
+                    </Button>
+                    <Button
+                      variant={viewMode === "day" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("day")}
+                    >
+                      Day
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentDate(new Date())}
+                    >
+                      Today
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Calendar View */}
+            <Card variant="elevated">
+              <CardContent className="p-6">
+                {viewMode === "month" ? renderMonthView() : renderDayView()}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Work Hours Tab */}
+          <TabsContent value="work-hours">
+            <WorkHoursManager />
+          </TabsContent>
+
+          {/* Blocked Times Tab */}
+          <TabsContent value="blocked-times">
+            <BlockedTimesCalendar />
+          </TabsContent>
+        </Tabs>
 
         {/* Appointment Detail Dialog */}
         {selectedAppointment && (
