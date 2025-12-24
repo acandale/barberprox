@@ -42,6 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { WorkHoursManager } from "@/components/admin/WorkHoursManager";
 import { BlockedTimesCalendar } from "@/components/admin/BlockedTimesCalendar";
+import { ServicesManager } from "@/components/admin/ServicesManager";
 
 interface ProfileInfo {
   full_name: string;
@@ -71,7 +72,7 @@ const SERVICE_COLORS: Record<string, string> = {
 };
 
 type ViewMode = "month" | "week" | "day";
-type AdminTab = "appointments" | "work-hours" | "blocked-times";
+type AdminTab = "appointments" | "work-hours" | "blocked-times" | "services";
 
 export default function AdminPage() {
   const { user, isAdmin, isLoading: authLoading } = useAuth();
@@ -340,10 +341,14 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AdminTab)}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="appointments" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Appointments
+            </TabsTrigger>
+            <TabsTrigger value="services" className="flex items-center gap-2">
+              <Scissors className="h-4 w-4" />
+              Services
             </TabsTrigger>
             <TabsTrigger value="work-hours" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -434,6 +439,11 @@ export default function AdminPage() {
                 {viewMode === "month" ? renderMonthView() : renderDayView()}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Services Tab */}
+          <TabsContent value="services">
+            <ServicesManager />
           </TabsContent>
 
           {/* Work Hours Tab */}
