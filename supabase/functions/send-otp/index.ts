@@ -29,6 +29,10 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("RESEND_API_KEY is not configured");
       throw new Error("Email service is not configured");
     }
+    
+    // Trim the API key to remove any whitespace or newlines
+    const cleanApiKey = resendApiKey.trim();
+    console.log("API key length:", cleanApiKey.length);
 
     const { email, userId, fullName }: SendOtpRequest = await req.json();
 
@@ -70,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
+        "Authorization": "Bearer " + cleanApiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
