@@ -207,18 +207,22 @@ export default function AuthPage() {
           // Check if user is verified
           const { data: profile } = await supabase
             .from("profiles")
-            .select("is_verified")
+            .select("is_verified, full_name")
             .eq("id", data.user.id)
             .single();
           
           if (profile?.is_verified) {
             navigate("/dashboard");
           } else {
-            // User not verified, send OTP
+            // User not verified, send OTP and require verification
             setPendingUserId(data.user.id);
             setFormData((prev) => ({ ...prev, email: formData.email }));
-            await sendOtp(data.user.id, formData.email, "User");
+            await sendOtp(data.user.id, formData.email, profile?.full_name || "User");
             setMode("verify");
+            toast({
+              title: "Verification required",
+              description: "Please verify your email to continue.",
+            });
           }
         }
       }
