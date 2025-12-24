@@ -66,25 +66,38 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    console.log("OTP matched! Updating verification status...");
+
     // Mark OTP as verified
-    await supabase
+    const { error: otpUpdateError } = await supabase
       .from("otp_verifications")
       .update({ verified: true })
       .eq("id", otpRecord.id);
 
+    if (otpUpdateError) {
+      console.error("Error updating OTP record:", otpUpdateError);
+    }
+
     // Update profile to mark as verified
-    const { error: profileError } = await supabase
+    const { data: updatedProfile, error: profileError } = await supabase
       .from("profiles")
       .update({ is_verified: true })
-      .eq("id", userId);
+      .eq("id", userId)
+      .select()
+      .single();
 
     if (profileError) {
       console.error("Error updating profile:", profileError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Failed to update verification status" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
+    console.log("Profile updated successfully:", updatedProfile);
     console.log("OTP verified successfully for user:", userId);
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, verified: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
