@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { Scissors, Menu, X, User, Calendar, LogOut } from "lucide-react";
+import { Scissors, Menu, X, User, Calendar, LogOut, Settings } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -77,6 +77,19 @@ export function Navbar({ variant = "default" }: NavbarProps) {
             >
               About
             </Link>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                  isTransparent
+                    ? "text-white/80 hover:text-white"
+                    : "text-purple hover:text-purple/80"
+                }`}
+              >
+                <Settings className="h-4 w-4" />
+                Admin
+              </Link>
+            )}
 
             {user ? (
               <DropdownMenu>
