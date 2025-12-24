@@ -122,6 +122,12 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (!emailResponse.ok) {
       console.error("Error sending email:", emailResult);
+      
+      // Check if it's a domain verification error
+      if (emailResult.message?.includes("testing emails") || emailResult.message?.includes("verify a domain")) {
+        throw new Error("Email service requires domain verification. Please contact support or verify your domain at resend.com/domains");
+      }
+      
       throw new Error(emailResult.message || "Failed to send email");
     }
 
