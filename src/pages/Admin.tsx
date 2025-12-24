@@ -44,17 +44,20 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
+interface ProfileInfo {
+  full_name: string;
+  email: string;
+  phone: string;
+}
+
 interface AppointmentWithDetails {
   id: string;
   start_time: string;
   end_time: string;
   status: string;
   notes: string | null;
-  profiles: {
-    full_name: string;
-    email: string;
-    phone: string;
-  };
+  user_id: string;
+  profiles: ProfileInfo | null;
   services: {
     name: string;
     duration_minutes: number;
@@ -133,7 +136,22 @@ export default function AdminPage() {
         .order("start_time", { ascending: true });
 
       if (error) throw error;
-      return data as AppointmentWithDetails[];
+      
+      // Fetch profiles for all appointments
+      const userIds = [...new Set(data?.map(apt => apt.user_id) || [])];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, phone")
+        .in("id", userIds);
+      
+      const profilesMap = new Map(
+        profilesData?.map(p => [p.id, { full_name: p.full_name, email: p.email, phone: p.phone }]) || []
+      );
+      
+      return (data || []).map(apt => ({
+        ...apt,
+        profiles: profilesMap.get(apt.user_id) || null
+      })) as AppointmentWithDetails[];
     },
     enabled: !!user && isAdmin,
   });
@@ -264,7 +282,7 @@ export default function AdminPage() {
                     }}
                   >
                     {format(parseISO(apt.start_time), "HH:mm")} -{" "}
-                    {apt.profiles.full_name.split(" ")[0]}
+                    {apt.profiles?.full_name?.split(" ")[0] || "Unknown"}
                   </div>
                 ))}
                 {dayAppointments.length > 3 && (
@@ -317,7 +335,7 @@ export default function AdminPage() {
                             )}
                           />
                           <div>
-                            <p className="font-medium">{apt.profiles.full_name}</p>
+                            <p className="font-medium">{apt.profiles?.full_name || "Unknown Client"}</p>
                             <p className="text-sm text-muted-foreground">
                               {apt.services.name} •{" "}
                               {format(parseISO(apt.start_time), "h:mm a")} -{" "}
@@ -541,12 +559,12 @@ export default function AdminPage() {
                     <User className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="font-semibold">{selectedAppointment.profiles.full_name}</p>
+                    <p className="font-semibold">{selectedAppointment.profiles?.full_name || "Unknown Client"}</p>
                     <p className="text-sm text-muted-foreground">
-                      {selectedAppointment.profiles.email}
+                      {selectedAppointment.profiles?.email || "No email"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {selectedAppointment.profiles.phone}
+                      {selectedAppointment.profiles?.phone || "No phone"}
                     </p>
                   </div>
                 </div>
