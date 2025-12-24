@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { Scissors, Menu, X, User, Calendar, LogOut, Settings } from "lucide-react";
+import { Scissors, Menu, X, User, Calendar, LogOut, Settings, Download } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -76,6 +76,17 @@ export function Navbar({ variant = "default" }: NavbarProps) {
               }`}
             >
               About
+            </Link>
+            <Link
+              to="/install"
+              className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                isTransparent
+                  ? "text-white/80 hover:text-white"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Download className="h-4 w-4" />
+              Install App
             </Link>
             {isAdmin && (
               <Link
@@ -175,6 +186,16 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 About
+              </Link>
+              <Link
+                to="/install"
+                className={`text-sm font-medium flex items-center gap-1.5 ${
+                  isTransparent ? "text-white/80" : "text-muted-foreground"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Download className="h-4 w-4" />
+                Install App
               </Link>
               {user ? (
                 <>
