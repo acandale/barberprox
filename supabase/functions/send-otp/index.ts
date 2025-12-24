@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +24,12 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY is not configured");
+      throw new Error("Email service is not configured");
+    }
+
     const { email, userId, fullName }: SendOtpRequest = await req.json();
 
     console.log("Generating OTP for user:", userId, "email:", email);
@@ -63,47 +66,61 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("OTP stored successfully, sending email...");
 
-    // Send OTP email
-    const emailResponse = await resend.emails.send({
-      from: "BarberPro <onboarding@resend.dev>",
-      to: [email],
-      subject: "Your BarberPro Verification Code",
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px;">
-          <div style="max-width: 480px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-            <div style="background-color: #001f3f; padding: 24px; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px;">✂️ BarberPro</h1>
-            </div>
-            <div style="padding: 32px 24px;">
-              <h2 style="color: #18181b; margin: 0 0 16px 0; font-size: 20px;">Hello ${fullName}!</h2>
-              <p style="color: #52525b; margin: 0 0 24px 0; font-size: 16px; line-height: 1.5;">
-                Your verification code is:
-              </p>
-              <div style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 24px;">
-                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #001f3f;">${otpCode}</span>
+    // Send OTP email using Resend REST API
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "BarberPro <onboarding@resend.dev>",
+        to: [email],
+        subject: "Your BarberPro Verification Code",
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px;">
+            <div style="max-width: 480px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+              <div style="background-color: #001f3f; padding: 24px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">✂️ BarberPro</h1>
               </div>
-              <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">
-                This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
-              </p>
+              <div style="padding: 32px 24px;">
+                <h2 style="color: #18181b; margin: 0 0 16px 0; font-size: 20px;">Hello ${fullName}!</h2>
+                <p style="color: #52525b; margin: 0 0 24px 0; font-size: 16px; line-height: 1.5;">
+                  Your verification code is:
+                </p>
+                <div style="background-color: #f4f4f5; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 24px;">
+                  <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #001f3f;">${otpCode}</span>
+                </div>
+                <p style="color: #71717a; margin: 0; font-size: 14px; line-height: 1.5;">
+                  This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
+                </p>
+              </div>
+              <div style="background-color: #f4f4f5; padding: 16px 24px; text-align: center;">
+                <p style="color: #a1a1aa; margin: 0; font-size: 12px;">
+                  © ${new Date().getFullYear()} BarberPro. All rights reserved.
+                </p>
+              </div>
             </div>
-            <div style="background-color: #f4f4f5; padding: 16px 24px; text-align: center;">
-              <p style="color: #a1a1aa; margin: 0; font-size: 12px;">
-                © ${new Date().getFullYear()} BarberPro. All rights reserved.
-              </p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `,
+          </body>
+          </html>
+        `,
+      }),
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    const emailResult = await emailResponse.json();
+    
+    if (!emailResponse.ok) {
+      console.error("Error sending email:", emailResult);
+      throw new Error(emailResult.message || "Failed to send email");
+    }
+
+    console.log("Email sent successfully:", emailResult);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
