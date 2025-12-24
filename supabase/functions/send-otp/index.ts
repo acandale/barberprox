@@ -71,12 +71,13 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("OTP stored successfully, sending email...");
 
     // Send OTP email using Resend REST API
+    const headers = new Headers();
+    headers.set("Authorization", "Bearer " + cleanApiKey);
+    headers.set("Content-Type", "application/json");
+    
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        "Authorization": "Bearer " + cleanApiKey,
-        "Content-Type": "application/json",
-      },
+      headers: headers,
       body: JSON.stringify({
         from: "BarberPro <onboarding@resend.dev>",
         to: [email],
