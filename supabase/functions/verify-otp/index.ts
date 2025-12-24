@@ -54,8 +54,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Check if OTP matches
-    if (otpRecord.otp_code !== otpCode) {
-      console.log("OTP mismatch");
+    console.log("Stored OTP:", otpRecord.otp_code, "Type:", typeof otpRecord.otp_code);
+    console.log("Received OTP:", otpCode, "Type:", typeof otpCode);
+    
+    // Ensure string comparison
+    if (String(otpRecord.otp_code).trim() !== String(otpCode).trim()) {
+      console.log("OTP mismatch - stored:", otpRecord.otp_code, "received:", otpCode);
       return new Response(
         JSON.stringify({ success: false, error: "Invalid verification code" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
