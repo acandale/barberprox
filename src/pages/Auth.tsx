@@ -6,11 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Scissors, ArrowLeft, Mail, Lock, User, Phone, Loader2, ShieldCheck } from "lucide-react";
+import { Scissors, ArrowLeft, Mail, Lock, User, Phone, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+const DEVICE_ID_KEY = "barber_device_id";
+const REGISTERED_DEVICE_KEY = "barber_registered_device";
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -23,6 +27,31 @@ const signInSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   password: z.string().min(1, "Password is required"),
 });
+
+// Generate a unique device ID
+const getOrCreateDeviceId = (): string => {
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+  if (!deviceId) {
+    deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+  return deviceId;
+};
+
+// Check if device has already registered an account
+const hasDeviceRegistered = (): boolean => {
+  return localStorage.getItem(REGISTERED_DEVICE_KEY) === "true";
+};
+
+// Mark device as having registered an account
+const markDeviceAsRegistered = () => {
+  localStorage.setItem(REGISTERED_DEVICE_KEY, "true");
+};
+
+// Generate a random 4-digit PIN
+const generatePin = (): string => {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+};
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
@@ -37,16 +66,25 @@ export default function AuthPage() {
     password: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [otpValue, setOtpValue] = useState("");
+  const [pinValue, setPinValue] = useState("");
+  const [displayedPin, setDisplayedPin] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [deviceRestricted, setDeviceRestricted] = useState(false);
 
-  const { signIn, signUp, user, isLoading: authLoading } = useAuth();
+  const { signIn, signUp, user, isLoading: authLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Check device restriction on mount
+  useEffect(() => {
+    getOrCreateDeviceId();
+    if (hasDeviceRegistered() && mode === "signup") {
+      setDeviceRestricted(true);
+    }
+  }, [mode]);
+
   useEffect(() => {
     if (!authLoading && user && mode !== "verify") {
-      // Check if user is verified
       checkUserVerification();
     }
   }, [user, authLoading, mode]);
@@ -63,61 +101,56 @@ export default function AuthPage() {
     if (profile?.is_verified) {
       navigate("/dashboard");
     } else {
-      // User exists but not verified, send OTP
+      // User exists but not verified - show PIN verification
       setPendingUserId(user.id);
-      await sendOtp(user.id, formData.email || user.email || "", formData.fullName || "User");
-      setMode("verify");
+      showPinVerification();
     }
   };
 
-  const sendOtp = async (userId: string, email: string, fullName: string) => {
-    try {
-      const { error } = await supabase.functions.invoke("send-otp", {
-        body: { userId, email, fullName },
-      });
+  const showPinVerification = () => {
+    const pin = generatePin();
+    setDisplayedPin(pin);
+    setMode("verify");
+    
+    toast({
+      title: "🔐 Security PIN",
+      description: `Your verification code is: ${pin}`,
+      duration: 30000, // Show for 30 seconds
+    });
+  };
 
-      if (error) throw error;
+  const verifyPin = async () => {
+    if (!pendingUserId || pinValue.length !== 4) return;
 
+    if (pinValue !== displayedPin) {
       toast({
-        title: "Code sent!",
-        description: "Check your email for the verification code.",
-      });
-    } catch (error: any) {
-      console.error("Error sending OTP:", error);
-      toast({
-        title: "Error sending code",
-        description: error.message || "Please try again.",
+        title: "Invalid PIN",
+        description: "The PIN you entered doesn't match. Please try again.",
         variant: "destructive",
       });
+      return;
     }
-  };
-
-  const verifyOtp = async () => {
-    if (!pendingUserId || otpValue.length !== 6) return;
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("verify-otp", {
-        body: { userId: pendingUserId, otpCode: otpValue },
-      });
+      // Update profile to mark as verified
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_verified: true })
+        .eq("id", pendingUserId);
 
       if (error) throw error;
 
-      if (data?.success) {
-        toast({
-          title: "Verified!",
-          description: "Your account has been verified successfully.",
-        });
-        navigate("/dashboard");
-      } else {
-        toast({
-          title: "Verification failed",
-          description: data?.error || "Invalid or expired code.",
-          variant: "destructive",
-        });
-      }
+      // Refresh the profile data in auth context
+      await refreshProfile();
+
+      toast({
+        title: "Verified!",
+        description: "Your account has been verified successfully.",
+      });
+      navigate("/dashboard");
     } catch (error: any) {
-      console.error("Error verifying OTP:", error);
+      console.error("Error verifying:", error);
       toast({
         title: "Verification failed",
         description: error.message || "Please try again.",
@@ -128,11 +161,16 @@ export default function AuthPage() {
     }
   };
 
-  const resendOtp = async () => {
-    if (!pendingUserId || !user) return;
-    setIsLoading(true);
-    await sendOtp(pendingUserId, user.email || formData.email, formData.fullName || "User");
-    setIsLoading(false);
+  const regeneratePin = () => {
+    const pin = generatePin();
+    setDisplayedPin(pin);
+    setPinValue("");
+    
+    toast({
+      title: "🔐 New Security PIN",
+      description: `Your new verification code is: ${pin}`,
+      duration: 30000,
+    });
   };
 
   const validateForm = () => {
@@ -163,6 +201,17 @@ export default function AuthPage() {
     
     if (!validateForm()) return;
 
+    // Check device restriction for signup
+    if (mode === "signup" && hasDeviceRegistered()) {
+      setDeviceRestricted(true);
+      toast({
+        title: "Device Limit Reached",
+        description: "Only one account can be created per device.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -189,10 +238,12 @@ export default function AuthPage() {
             });
           }
         } else if (data?.user) {
-          // Send OTP after successful signup
+          // Mark device as registered
+          markDeviceAsRegistered();
+          
+          // Show PIN verification instead of email OTP
           setPendingUserId(data.user.id);
-          await sendOtp(data.user.id, formData.email, formData.fullName);
-          setMode("verify");
+          showPinVerification();
         }
       } else {
         const { error, data } = await signIn(formData.email, formData.password);
@@ -214,15 +265,9 @@ export default function AuthPage() {
           if (profile?.is_verified) {
             navigate("/dashboard");
           } else {
-            // User not verified, send OTP and require verification
+            // User not verified, show PIN verification
             setPendingUserId(data.user.id);
-            setFormData((prev) => ({ ...prev, email: formData.email }));
-            await sendOtp(data.user.id, formData.email, profile?.full_name || "User");
-            setMode("verify");
-            toast({
-              title: "Verification required",
-              description: "Please verify your email to continue.",
-            });
+            showPinVerification();
           }
         }
       }
@@ -239,7 +284,7 @@ export default function AuthPage() {
     );
   }
 
-  // OTP Verification Screen
+  // PIN Verification Screen
   if (mode === "verify") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
@@ -252,26 +297,40 @@ export default function AuthPage() {
               <div className="mx-auto mb-4 p-3 rounded-xl bg-navy shadow-md">
                 <ShieldCheck className="h-8 w-8 text-white" />
               </div>
-              <CardTitle className="text-2xl">Verify your email</CardTitle>
+              <CardTitle className="text-2xl">Security PIN Verification</CardTitle>
               <CardDescription>
-                Enter the 6-digit code we sent to your email
+                Enter the 4-digit code displayed on screen (testing mode)
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-6">
+              {/* Display the PIN prominently */}
+              <Alert className="bg-primary/10 border-primary">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-center">
+                  <span className="block text-sm text-muted-foreground mb-2">
+                    Your verification code is:
+                  </span>
+                  <span className="block text-3xl font-bold tracking-[0.5em] text-primary">
+                    {displayedPin}
+                  </span>
+                  <span className="block text-xs text-muted-foreground mt-2">
+                    (Testing mode - code displayed on screen)
+                  </span>
+                </AlertDescription>
+              </Alert>
+
               <div className="flex justify-center">
                 <InputOTP
-                  maxLength={6}
-                  value={otpValue}
-                  onChange={(value) => setOtpValue(value)}
+                  maxLength={4}
+                  value={pinValue}
+                  onChange={(value) => setPinValue(value)}
                 >
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
                     <InputOTPSlot index={1} />
                     <InputOTPSlot index={2} />
                     <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
                   </InputOTPGroup>
                 </InputOTP>
               </div>
@@ -280,8 +339,8 @@ export default function AuthPage() {
                 variant="hero"
                 className="w-full"
                 size="lg"
-                disabled={isLoading || otpValue.length !== 6}
-                onClick={verifyOtp}
+                disabled={isLoading || pinValue.length !== 4}
+                onClick={verifyPin}
               >
                 {isLoading ? (
                   <>
@@ -289,21 +348,21 @@ export default function AuthPage() {
                     Verifying...
                   </>
                 ) : (
-                  "Verify Code"
+                  "Verify PIN"
                 )}
               </Button>
 
               <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Didn't receive the code?
+                  Need a new code?
                 </p>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={resendOtp}
+                  onClick={regeneratePin}
                   disabled={isLoading}
                 >
-                  Resend Code
+                  Generate New PIN
                 </Button>
               </div>
             </CardContent>
@@ -346,6 +405,17 @@ export default function AuthPage() {
           </CardHeader>
 
           <CardContent>
+            {/* Device Restriction Warning */}
+            {deviceRestricted && mode === "signup" && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  This device has already been used to create an account. 
+                  Please sign in instead or use a different device.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "signup" && (
                 <>
@@ -361,6 +431,7 @@ export default function AuthPage() {
                           setFormData({ ...formData, fullName: e.target.value })
                         }
                         className="pl-10"
+                        disabled={deviceRestricted}
                       />
                     </div>
                     {errors.fullName && (
@@ -381,6 +452,7 @@ export default function AuthPage() {
                           setFormData({ ...formData, phone: e.target.value })
                         }
                         className="pl-10"
+                        disabled={deviceRestricted}
                       />
                     </div>
                     {errors.phone && (
@@ -403,6 +475,7 @@ export default function AuthPage() {
                       setFormData({ ...formData, email: e.target.value })
                     }
                     className="pl-10"
+                    disabled={mode === "signup" && deviceRestricted}
                   />
                 </div>
                 {errors.email && (
@@ -423,6 +496,7 @@ export default function AuthPage() {
                       setFormData({ ...formData, password: e.target.value })
                     }
                     className="pl-10"
+                    disabled={mode === "signup" && deviceRestricted}
                   />
                 </div>
                 {errors.password && (
@@ -435,7 +509,7 @@ export default function AuthPage() {
                 variant="hero"
                 className="w-full"
                 size="lg"
-                disabled={isLoading}
+                disabled={isLoading || (mode === "signup" && deviceRestricted)}
               >
                 {isLoading ? (
                   <>
@@ -456,7 +530,10 @@ export default function AuthPage() {
                   <>
                     Already have an account?{" "}
                     <button
-                      onClick={() => setMode("signin")}
+                      onClick={() => {
+                        setMode("signin");
+                        setDeviceRestricted(false);
+                      }}
                       className="text-purple hover:text-purple-light font-medium transition-colors"
                     >
                       Sign in
@@ -466,7 +543,12 @@ export default function AuthPage() {
                   <>
                     Don't have an account?{" "}
                     <button
-                      onClick={() => setMode("signup")}
+                      onClick={() => {
+                        setMode("signup");
+                        if (hasDeviceRegistered()) {
+                          setDeviceRestricted(true);
+                        }
+                      }}
                       className="text-purple hover:text-purple-light font-medium transition-colors"
                     >
                       Sign up
