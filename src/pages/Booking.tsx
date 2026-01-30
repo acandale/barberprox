@@ -5,7 +5,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addMinutes, parseISO, isSameDay, isWithinInterval, setHours, setMinutes } from "date-fns";
 import { Scissors, Clock, DollarSign, ArrowLeft, ArrowRight, Loader2, Check } from "lucide-react";
@@ -37,12 +37,36 @@ export default function BookingPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isBooking, setIsBooking] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
+
+  // Subscribe to realtime changes on appointments table
+  useEffect(() => {
+    const channel = supabase
+      .channel('appointments-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments'
+        },
+        () => {
+          // Invalidate the appointments query to refetch available slots
+          queryClient.invalidateQueries({ queryKey: ["appointments-for-date"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Fetch services
   const { data: services = [] } = useQuery({
