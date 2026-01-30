@@ -58,12 +58,13 @@ export function Navbar({ variant = "default" }: NavbarProps) {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <button
+              type="button"
               onClick={() => {
                 const el = document.getElementById("services");
                 if (el) el.scrollIntoView({ behavior: "smooth" });
                 else navigate("/#services");
               }}
-              className={`text-sm font-medium transition-colors ${
+              className={`text-sm font-medium transition-colors cursor-pointer ${
                 isTransparent
                   ? "text-white/80 hover:text-white"
                   : "text-muted-foreground hover:text-foreground"
@@ -72,12 +73,13 @@ export function Navbar({ variant = "default" }: NavbarProps) {
               Services
             </button>
             <button
+              type="button"
               onClick={() => {
                 const el = document.getElementById("about");
                 if (el) el.scrollIntoView({ behavior: "smooth" });
                 else navigate("/#about");
               }}
-              className={`text-sm font-medium transition-colors ${
+              className={`text-sm font-medium transition-colors cursor-pointer ${
                 isTransparent
                   ? "text-white/80 hover:text-white"
                   : "text-muted-foreground hover:text-foreground"
@@ -178,7 +180,8 @@ export function Navbar({ variant = "default" }: NavbarProps) {
           <div className="md:hidden py-4 border-t border-white/10">
             <div className="flex flex-col gap-4">
               <button
-                className={`text-sm font-medium text-left ${
+                type="button"
+                className={`text-sm font-medium text-left cursor-pointer ${
                   isTransparent ? "text-white/80" : "text-muted-foreground"
                 }`}
                 onClick={() => {
@@ -191,7 +194,8 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                 Services
               </button>
               <button
-                className={`text-sm font-medium text-left ${
+                type="button"
+                className={`text-sm font-medium text-left cursor-pointer ${
                   isTransparent ? "text-white/80" : "text-muted-foreground"
                 }`}
                 onClick={() => {
