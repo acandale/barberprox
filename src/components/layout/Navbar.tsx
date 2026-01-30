@@ -57,8 +57,12 @@ export function Navbar({ variant = "default" }: NavbarProps) {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link
-              to="/#services"
+            <button
+              onClick={() => {
+                const el = document.getElementById("services");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+                else navigate("/#services");
+              }}
               className={`text-sm font-medium transition-colors ${
                 isTransparent
                   ? "text-white/80 hover:text-white"
@@ -66,9 +70,13 @@ export function Navbar({ variant = "default" }: NavbarProps) {
               }`}
             >
               Services
-            </Link>
-            <Link
-              to="/#about"
+            </button>
+            <button
+              onClick={() => {
+                const el = document.getElementById("about");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+                else navigate("/#about");
+              }}
               className={`text-sm font-medium transition-colors ${
                 isTransparent
                   ? "text-white/80 hover:text-white"
@@ -76,7 +84,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
               }`}
             >
               About
-            </Link>
+            </button>
             <Link
               to="/install"
               className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
@@ -169,24 +177,32 @@ export function Navbar({ variant = "default" }: NavbarProps) {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-white/10">
             <div className="flex flex-col gap-4">
-              <Link
-                to="/#services"
-                className={`text-sm font-medium ${
+              <button
+                className={`text-sm font-medium text-left ${
                   isTransparent ? "text-white/80" : "text-muted-foreground"
                 }`}
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  const el = document.getElementById("services");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                  else navigate("/#services");
+                }}
               >
                 Services
-              </Link>
-              <Link
-                to="/#about"
-                className={`text-sm font-medium ${
+              </button>
+              <button
+                className={`text-sm font-medium text-left ${
                   isTransparent ? "text-white/80" : "text-muted-foreground"
                 }`}
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  const el = document.getElementById("about");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                  else navigate("/#about");
+                }}
               >
                 About
-              </Link>
+              </button>
               <Link
                 to="/install"
                 className={`text-sm font-medium flex items-center gap-1.5 ${
