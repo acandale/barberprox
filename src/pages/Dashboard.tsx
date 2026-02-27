@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Scissors, Plus, Loader2 } from "lucide-react";
+import { Calendar, Clock, Scissors, Plus, Loader2, DollarSign } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isFuture, parseISO } from "date-fns";
@@ -58,6 +58,18 @@ export default function Dashboard() {
       return data as Appointment[];
     },
     enabled: !!user,
+  });
+
+  const { data: services = [] } = useQuery({
+    queryKey: ["admin-services"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("services")
+        .select("*")
+        .order("price", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
   });
 
   const upcomingAppointments = appointments.filter(
@@ -266,66 +278,30 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            <Card variant="elevated">
-              <CardHeader>
-                <div className="p-3 rounded-lg bg-purple/10 text-purple w-fit mb-2">
-                  <Scissors className="h-6 w-6" />
-                </div>
-                <CardTitle>Premium Haircut</CardTitle>
-                <CardDescription>Full styling with consultation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between text-sm mb-4">
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Clock className="h-4 w-4" /> 45 min
-                  </span>
-                  <span className="font-bold text-xl text-purple">$35</span>
-                </div>
-                <Button variant="secondary" className="w-full" onClick={() => navigate("/book")}>
-                  Book Now
-                </Button>
-              </CardContent>
-            </Card>
-            <Card variant="elevated">
-              <CardHeader>
-                <div className="p-3 rounded-lg bg-purple/10 text-purple w-fit mb-2">
-                  <Scissors className="h-6 w-6" />
-                </div>
-                <CardTitle>Standard Haircut</CardTitle>
-                <CardDescription>Classic cut with clean finish</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between text-sm mb-4">
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Clock className="h-4 w-4" /> 30 min
-                  </span>
-                  <span className="font-bold text-xl text-purple">$25</span>
-                </div>
-                <Button variant="secondary" className="w-full" onClick={() => navigate("/book")}>
-                  Book Now
-                </Button>
-              </CardContent>
-            </Card>
-            <Card variant="elevated">
-              <CardHeader>
-                <div className="p-3 rounded-lg bg-purple/10 text-purple w-fit mb-2">
-                  <Scissors className="h-6 w-6" />
-                </div>
-                <CardTitle>Beard Trim</CardTitle>
-                <CardDescription>Shape and style your beard</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between text-sm mb-4">
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Clock className="h-4 w-4" /> 20 min
-                  </span>
-                  <span className="font-bold text-xl text-purple">$15</span>
-                </div>
-                <Button variant="secondary" className="w-full" onClick={() => navigate("/book")}>
-                  Book Now
-                </Button>
-              </CardContent>
-            </Card>
+            {services.map((service) => (
+              <Card key={service.id} variant="elevated">
+                <CardHeader>
+                  <div className="p-3 rounded-lg bg-purple/10 text-purple w-fit mb-2">
+                    <Scissors className="h-6 w-6" />
+                  </div>
+                  <CardTitle>{service.name}</CardTitle>
+                  <CardDescription>{service.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between text-sm mb-4">
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Clock className="h-4 w-4" /> {service.duration_minutes} min
+                    </span>
+                    <span className="flex items-center gap-1 font-bold text-xl text-purple">
+                      <DollarSign className="h-4 w-4" />{Number(service.price)}
+                    </span>
+                  </div>
+                  <Button variant="secondary" className="w-full" onClick={() => navigate("/book")}>
+                    Book Now
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </section>
 
