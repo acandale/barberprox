@@ -219,6 +219,13 @@ export default function BookingPage() {
     
     if (!workHour || !workHour.is_working_day) return true;
     if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true;
+
+    // Check if date falls within a blocked vacation period
+    const dateStr = format(date, "yyyy-MM-dd");
+    const isBlockedDay = blockedDays.some(
+      (bd) => dateStr >= bd.start_date && dateStr <= bd.end_date
+    );
+    if (isBlockedDay) return true;
     
     return false;
   };
