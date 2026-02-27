@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { WorkHoursManager } from "@/components/admin/WorkHoursManager";
 import { BlockedTimesCalendar } from "@/components/admin/BlockedTimesCalendar";
 import { ServicesManager } from "@/components/admin/ServicesManager";
+import { VacationsManager } from "@/components/admin/VacationsManager";
 
 interface ProfileInfo {
   full_name: string;
@@ -72,7 +73,7 @@ const SERVICE_COLORS: Record<string, string> = {
 };
 
 type ViewMode = "month" | "week" | "day";
-type AdminTab = "appointments" | "work-hours" | "blocked-times" | "services";
+type AdminTab = "appointments" | "work-hours" | "blocked-times" | "services" | "vacations";
 
 export default function AdminPage() {
   const { user, isAdmin, isLoading: authLoading } = useAuth();
@@ -358,6 +359,10 @@ export default function AdminPage() {
               <CalendarOff className="h-4 w-4" />
               Block Times
             </TabsTrigger>
+            <TabsTrigger value="vacations" className="flex items-center gap-2">
+              <CalendarOff className="h-4 w-4" />
+              Vacations
+            </TabsTrigger>
           </TabsList>
 
           {/* Appointments Tab */}
@@ -454,6 +459,11 @@ export default function AdminPage() {
           {/* Blocked Times Tab */}
           <TabsContent value="blocked-times">
             <BlockedTimesCalendar />
+          </TabsContent>
+
+          {/* Vacations Tab */}
+          <TabsContent value="vacations">
+            <VacationsManager />
           </TabsContent>
         </Tabs>
 

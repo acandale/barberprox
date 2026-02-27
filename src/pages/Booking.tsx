@@ -140,6 +140,20 @@ export default function BookingPage() {
     enabled: !!selectedDate,
   });
 
+  // Fetch blocked days (vacations)
+  const { data: blockedDays = [] } = useQuery({
+    queryKey: ["blocked-days-booking"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blocked_days")
+        .select("start_date, end_date")
+        .gte("end_date", format(new Date(), "yyyy-MM-dd"));
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Generate available time slots
   const generateTimeSlots = () => {
     if (!selectedDate || !selectedService) return [];
@@ -205,6 +219,13 @@ export default function BookingPage() {
     
     if (!workHour || !workHour.is_working_day) return true;
     if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true;
+
+    // Check if date falls within a blocked vacation period
+    const dateStr = format(date, "yyyy-MM-dd");
+    const isBlockedDay = blockedDays.some(
+      (bd) => dateStr >= bd.start_date && dateStr <= bd.end_date
+    );
+    if (isBlockedDay) return true;
     
     return false;
   };
