@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { WorkHoursManager } from "@/components/admin/WorkHoursManager";
 import { BlockedTimesCalendar } from "@/components/admin/BlockedTimesCalendar";
 import { ServicesManager } from "@/components/admin/ServicesManager";
+import { VacationsManager } from "@/components/admin/VacationsManager";
 
 interface ProfileInfo {
   full_name: string;
