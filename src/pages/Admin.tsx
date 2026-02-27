@@ -359,6 +359,10 @@ export default function AdminPage() {
               <CalendarOff className="h-4 w-4" />
               Block Times
             </TabsTrigger>
+            <TabsTrigger value="vacations" className="flex items-center gap-2">
+              <CalendarOff className="h-4 w-4" />
+              Vacations
+            </TabsTrigger>
           </TabsList>
 
           {/* Appointments Tab */}
