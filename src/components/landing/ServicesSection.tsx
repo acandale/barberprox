@@ -5,11 +5,8 @@ import { Scissors, Clock, DollarSign } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-const serviceIcons: Record<string, React.ReactNode> = {
-  "Premium Haircut": <Scissors className="h-8 w-8" />,
-  "Standard Haircut": <Scissors className="h-8 w-8" />,
-  "Beard Trim": <Scissors className="h-8 w-8" />,
-};
+// All services use the scissors icon
+const ServiceIcon = () => <Scissors className="h-8 w-8" />;
 
 export function ServicesSection() {
   const navigate = useNavigate();
