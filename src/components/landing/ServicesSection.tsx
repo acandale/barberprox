@@ -52,7 +52,7 @@ export function ServicesSection() {
               
               <CardHeader className="text-center pb-2">
                 <div className="mx-auto mb-4 p-4 rounded-2xl bg-purple/10 text-purple group-hover:bg-purple group-hover:text-white transition-all duration-300">
-                  {serviceIcons[service.name] || <Scissors className="h-8 w-8" />}
+                  <ServiceIcon />
                 </div>
                 <CardTitle className="text-xl">{service.name}</CardTitle>
                 <CardDescription className="min-h-[40px]">
