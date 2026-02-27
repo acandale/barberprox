@@ -460,6 +460,11 @@ export default function AdminPage() {
           <TabsContent value="blocked-times">
             <BlockedTimesCalendar />
           </TabsContent>
+
+          {/* Vacations Tab */}
+          <TabsContent value="vacations">
+            <VacationsManager />
+          </TabsContent>
         </Tabs>
 
         {/* Appointment Detail Dialog */}
