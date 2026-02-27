@@ -140,6 +140,20 @@ export default function BookingPage() {
     enabled: !!selectedDate,
   });
 
+  // Fetch blocked days (vacations)
+  const { data: blockedDays = [] } = useQuery({
+    queryKey: ["blocked-days-booking"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blocked_days")
+        .select("start_date, end_date")
+        .gte("end_date", format(new Date(), "yyyy-MM-dd"));
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Generate available time slots
   const generateTimeSlots = () => {
     if (!selectedDate || !selectedService) return [];
