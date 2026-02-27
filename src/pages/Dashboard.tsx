@@ -60,6 +60,18 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  const { data: services = [] } = useQuery({
+    queryKey: ["admin-services"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("services")
+        .select("*")
+        .order("price", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const upcomingAppointments = appointments.filter(
     (apt) => isFuture(parseISO(apt.start_time)) && apt.status === "confirmed"
   );
