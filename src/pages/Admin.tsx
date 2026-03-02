@@ -94,6 +94,28 @@ export default function AdminPage() {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
+  // Fetch blocked times for day view
+  const { data: dayBlockedTimes = [] } = useQuery({
+    queryKey: ["admin-day-blocked-times", currentDate.toISOString(), viewMode],
+    queryFn: async () => {
+      const startDate = new Date(currentDate);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(currentDate);
+      endDate.setHours(23, 59, 59, 999);
+
+      const { data, error } = await supabase
+        .from("blocked_times")
+        .select("*")
+        .gte("start_time", startDate.toISOString())
+        .lte("start_time", endDate.toISOString())
+        .order("start_time", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && isAdmin && viewMode === "day",
+  });
+
   // Fetch appointments
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ["admin-appointments", currentDate.toISOString(), viewMode],
@@ -254,46 +276,87 @@ export default function AdminPage() {
 
   const renderDayView = () => {
     const dayAppointments = getAppointmentsForDay(currentDate);
-    const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM to 7 PM
+    // Generate 15-minute slots from 8:00 to 19:45
+    const slots: { hour: number; minute: number }[] = [];
+    for (let h = 8; h < 20; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        slots.push({ hour: h, minute: m });
+      }
+    }
+
+    const getAppointmentForSlot = (hour: number, minute: number) => {
+      return dayAppointments.find((apt) => {
+        const start = parseISO(apt.start_time);
+        return start.getHours() === hour && start.getMinutes() === minute;
+      });
+    };
+
+    const isSlotBlocked = (hour: number, minute: number) => {
+      const slotTime = new Date(currentDate);
+      slotTime.setHours(hour, minute, 0, 0);
+      return dayBlockedTimes.find((bt) => {
+        const btStart = parseISO(bt.start_time);
+        const btEnd = parseISO(bt.end_time);
+        return slotTime >= btStart && slotTime < btEnd;
+      });
+    };
+
+    const isSlotOccupied = (hour: number, minute: number) => {
+      const slotTime = new Date(currentDate);
+      slotTime.setHours(hour, minute, 0, 0);
+      return dayAppointments.some((apt) => {
+        const start = parseISO(apt.start_time);
+        const end = parseISO(apt.end_time);
+        return slotTime >= start && slotTime < end;
+      });
+    };
 
     return (
-      <div className="space-y-2">
-        {hours.map((hour) => {
-          const hourAppointments = dayAppointments.filter((apt) => {
-            const aptHour = parseISO(apt.start_time).getHours();
-            return aptHour === hour;
-          });
+      <div className="space-y-0">
+        {slots.map(({ hour, minute }) => {
+          const apt = getAppointmentForSlot(hour, minute);
+          const blocked = isSlotBlocked(hour, minute);
+          const occupied = !apt && isSlotOccupied(hour, minute);
+          const isHourMark = minute === 0;
 
           return (
-            <div key={hour} className="flex gap-4">
-              <div className="w-20 text-sm text-muted-foreground py-2">
-                {format(new Date().setHours(hour, 0), "h:mm a")}
+            <div key={`${hour}-${minute}`} className="flex gap-4">
+              <div className={cn(
+                "w-20 text-sm text-muted-foreground py-1 text-right pr-2",
+                !isHourMark && "text-xs opacity-60"
+              )}>
+                {format(new Date(2000, 0, 1, hour, minute), "h:mm a")}
               </div>
-              <div className="flex-1 min-h-[60px] border-l-2 border-muted pl-4">
-                {hourAppointments.map((apt) => (
+              <div className={cn(
+                "flex-1 min-h-[28px] border-l-2 pl-4 py-0.5",
+                isHourMark ? "border-muted-foreground/30" : "border-muted"
+              )}>
+                {blocked && !occupied && !apt && (
+                  <div className="bg-destructive/15 text-destructive text-xs p-1.5 rounded border border-destructive/20">
+                    🚫 {blocked.reason || "Blocked"}
+                  </div>
+                )}
+                {apt && (
                   <Card
-                    key={apt.id}
                     className={cn(
-                      "cursor-pointer mb-2",
+                      "cursor-pointer",
                       apt.status === "cancelled" && "opacity-50"
                     )}
                     onClick={() => setSelectedAppointment(apt)}
                   >
-                    <CardContent className="p-3">
+                    <CardContent className="p-2">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <div
                             className={cn(
-                              "w-2 h-full min-h-[40px] rounded-full",
+                              "w-2 h-8 rounded-full",
                               SERVICE_COLORS[apt.services.name] || "bg-purple"
                             )}
                           />
                           <div>
-                            <p className="font-medium">{apt.profiles?.full_name || "Unknown Client"}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {apt.services.name} •{" "}
-                              {format(parseISO(apt.start_time), "h:mm a")} -{" "}
-                              {format(parseISO(apt.end_time), "h:mm a")}
+                            <p className="font-medium text-sm">{apt.profiles?.full_name || "Unknown Client"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {apt.services.name} • {format(parseISO(apt.start_time), "h:mm a")} - {format(parseISO(apt.end_time), "h:mm a")}
                             </p>
                           </div>
                         </div>
@@ -312,7 +375,7 @@ export default function AdminPage() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                )}
               </div>
             </div>
           );
