@@ -86,6 +86,7 @@ export default function AdminPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
+  const [bookDialogOpen, setBookDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -373,6 +374,15 @@ export default function AdminPage() {
               <CardContent className="py-4">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setBookDialogOpen(true)}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      New Appointment
+                    </Button>
+                  </div>
                     <Button
                       variant="ghost"
                       size="icon"
