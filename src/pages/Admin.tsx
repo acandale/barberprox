@@ -44,6 +44,7 @@ import { WorkHoursManager } from "@/components/admin/WorkHoursManager";
 import { BlockedTimesCalendar } from "@/components/admin/BlockedTimesCalendar";
 import { ServicesManager } from "@/components/admin/ServicesManager";
 import { VacationsManager } from "@/components/admin/VacationsManager";
+import { AdminBookAppointment } from "@/components/admin/AdminBookAppointment";
 
 interface ProfileInfo {
   full_name: string;
