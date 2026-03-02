@@ -94,6 +94,28 @@ export default function AdminPage() {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
+  // Fetch blocked times for day view
+  const { data: dayBlockedTimes = [] } = useQuery({
+    queryKey: ["admin-day-blocked-times", currentDate.toISOString(), viewMode],
+    queryFn: async () => {
+      const startDate = new Date(currentDate);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(currentDate);
+      endDate.setHours(23, 59, 59, 999);
+
+      const { data, error } = await supabase
+        .from("blocked_times")
+        .select("*")
+        .gte("start_time", startDate.toISOString())
+        .lte("start_time", endDate.toISOString())
+        .order("start_time", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && isAdmin && viewMode === "day",
+  });
+
   // Fetch appointments
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ["admin-appointments", currentDate.toISOString(), viewMode],
