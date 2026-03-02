@@ -44,6 +44,7 @@ import { WorkHoursManager } from "@/components/admin/WorkHoursManager";
 import { BlockedTimesCalendar } from "@/components/admin/BlockedTimesCalendar";
 import { ServicesManager } from "@/components/admin/ServicesManager";
 import { VacationsManager } from "@/components/admin/VacationsManager";
+import { AdminBookAppointment } from "@/components/admin/AdminBookAppointment";
 
 interface ProfileInfo {
   full_name: string;
@@ -85,6 +86,7 @@ export default function AdminPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
+  const [bookDialogOpen, setBookDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -373,6 +375,16 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-2">
                     <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setBookDialogOpen(true)}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      New Appointment
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
                       variant="ghost"
                       size="icon"
                       onClick={() =>
@@ -554,6 +566,8 @@ export default function AdminPage() {
             </DialogContent>
           </Dialog>
         )}
+
+        <AdminBookAppointment open={bookDialogOpen} onOpenChange={setBookDialogOpen} />
       </main>
     </div>
   );
