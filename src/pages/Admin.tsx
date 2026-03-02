@@ -566,6 +566,8 @@ export default function AdminPage() {
             </DialogContent>
           </Dialog>
         )}
+
+        <AdminBookAppointment open={bookDialogOpen} onOpenChange={setBookDialogOpen} />
       </main>
     </div>
   );
