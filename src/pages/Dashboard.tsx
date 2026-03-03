@@ -97,6 +97,12 @@ export default function Dashboard() {
     (apt) => isFuture(parseISO(apt.start_time)) && apt.status === "confirmed"
   );
 
+  const todayAppointments = isAdmin
+    ? appointments.filter(
+        (apt) => isToday(parseISO(apt.start_time)) && apt.status === "confirmed"
+      )
+    : [];
+
   const nextAppointment = upcomingAppointments[0];
 
   const handleCancelAppointment = async (appointmentId: string) => {
