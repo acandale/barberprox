@@ -175,7 +175,7 @@ export default function Dashboard() {
                 Next Appointment
               </CardTitle>
               <CardDescription>
-                Your upcoming scheduled appointment
+                {isAdmin ? "Next upcoming appointment (all clients)" : "Your upcoming scheduled appointment"}
               </CardDescription>
             </CardHeader>
             <CardContent>
