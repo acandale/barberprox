@@ -300,6 +300,13 @@ export default function AdminPage() {
     };
 
     return (
+      <div className="relative">
+        {/* Time slots background */}
+        {slots.map(({ hour, minute }) => {
+          const blocked = isSlotBlocked(hour, minute);
+          const isHourMark = minute === 0;
+
+          return (
             <div
               key={`${hour}-${minute}`}
               className="flex gap-4"
@@ -332,7 +339,6 @@ export default function AdminPage() {
           const startSlot = getSlotIndex(start.getHours(), start.getMinutes());
           const durationMinutes = (end.getTime() - start.getTime()) / 60000;
           const spanSlots = durationMinutes / 15;
-          // 80px for time label + 16px gap
           const leftOffset = 96;
 
           return (
