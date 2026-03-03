@@ -289,14 +289,17 @@ export default function AdminPage() {
     const getSlotIndex = (hour: number, minute: number) =>
       (hour - DAY_START_HOUR) * 4 + minute / 15;
 
-    return (
-      <div className="relative">
-        {/* Time slots background */}
-        {slots.map(({ hour, minute }) => {
-          const blocked = isSlotBlocked(hour, minute);
-          const isHourMark = minute === 0;
+    const isSlotBlocked = (hour: number, minute: number) => {
+      const slotTime = new Date(currentDate);
+      slotTime.setHours(hour, minute, 0, 0);
+      return dayBlockedTimes.find((bt) => {
+        const btStart = parseISO(bt.start_time);
+        const btEnd = parseISO(bt.end_time);
+        return slotTime >= btStart && slotTime < btEnd;
+      });
+    };
 
-          return (
+    return (
             <div
               key={`${hour}-${minute}`}
               className="flex gap-4"
