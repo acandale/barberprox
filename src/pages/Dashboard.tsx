@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Scissors, Plus, Loader2, DollarSign } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isFuture, parseISO } from "date-fns";
+import { format, isFuture, isToday, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 interface Appointment {
