@@ -236,7 +236,7 @@ export function ServicesManager() {
                     />
                   </div>
                   <div>
-                    <Label>Price ($)</Label>
+                    <Label>Price (RON)</Label>
                     <Input
                       type="number"
                       min="0"
@@ -305,9 +305,8 @@ export function ServicesManager() {
                         <Clock className="h-3.5 w-3.5" />
                         {service.duration_minutes} min
                       </span>
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="h-3.5 w-3.5" />
-                        {Number(service.price).toFixed(2)}
+                      <span className="flex items-center gap-1 font-medium text-foreground">
+                       {Number(service.price).toFixed(2)} RON
                       </span>
                     </div>
                   </div>

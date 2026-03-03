@@ -69,9 +69,9 @@ export function ServicesSection() {
                       <Clock className="h-4 w-4" />
                       <span>{service.duration_minutes} min</span>
                     </div>
-                    <div className="flex items-center gap-1 font-bold text-2xl text-purple">
-                      <DollarSign className="h-5 w-5" />
-                      <span>{Number(service.price)}</span>
+                    <div className="flex items-center gap-2 font-bold text-2xl text-purple">
+                    <span>{Number(service.price)} RON</span>
+                  
                     </div>
                   </div>
 
