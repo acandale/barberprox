@@ -262,133 +262,77 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* All Appointments */}
-        {upcomingAppointments.length > 1 && (
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">All Upcoming Appointments</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {upcomingAppointments.slice(1).map((apt) => (
-                <Card key={apt.id} variant="default">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <p className="font-semibold">{apt.services.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(parseISO(apt.start_time), "MMM d, h:mm a")}
-                        </p>
+        {/* All Appointments - Admin: today's all clients, Client: own upcoming */}
+        {isAdmin ? (
+          todayAppointments.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">Today's Appointments (All Clients)</h2>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {todayAppointments.map((apt) => (
+                  <Card key={apt.id} variant="default">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold">{apt.services.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(parseISO(apt.start_time), "h:mm a")} - {format(parseISO(apt.end_time), "h:mm a")}
+                          </p>
+                          {apt.profiles?.full_name && (
+                            <p className="text-xs text-purple mt-1">Client: {apt.profiles.full_name}</p>
+                          )}
+                        </div>
+                        <span className="text-sm font-medium text-purple">
+                          ${Number(apt.services.price)}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-purple">
-                        ${Number(apt.services.price)}
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleCancelAppointment(apt.id)}
-                    >
-                      Cancel
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleCancelAppointment(apt.id)}
+                      >
+                        Cancel
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
+          )
+        ) : (
+          upcomingAppointments.length > 1 && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">All Upcoming Appointments</h2>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {upcomingAppointments.slice(1).map((apt) => (
+                  <Card key={apt.id} variant="default">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold">{apt.services.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(parseISO(apt.start_time), "MMM d, h:mm a")}
+                          </p>
+                        </div>
+                        <span className="text-sm font-medium text-purple">
+                          ${Number(apt.services.price)}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleCancelAppointment(apt.id)}
+                      >
+                        Cancel
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )
         )}
-
-        {/* Services Section */}
-        <section id="services" className="mt-16 scroll-mt-24">
-          <div className="mb-6">
-            <span className="text-sm font-semibold text-purple uppercase tracking-wider">Our Services</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mt-2">
-              Premium Grooming Services
-            </h2>
-            <p className="text-muted-foreground mt-2">
-              Choose from our range of professional services tailored to your needs
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {services.map((service) => (
-              <Card key={service.id} variant="elevated">
-                <CardHeader>
-                  <div className="p-3 rounded-lg bg-purple/10 text-purple w-fit mb-2">
-                    <Scissors className="h-6 w-6" />
-                  </div>
-                  <CardTitle>{service.name}</CardTitle>
-                  <CardDescription>{service.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm mb-4">
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="h-4 w-4" /> {service.duration_minutes} min
-                    </span>
-                    <span className="flex items-center gap-1 font-bold text-xl text-purple">
-                      <DollarSign className="h-4 w-4" />{Number(service.price)}
-                    </span>
-                  </div>
-                  <Button variant="secondary" className="w-full" onClick={() => navigate("/book")}>
-                    Book Now
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* About Section */}
-        <section id="about" className="mt-16 scroll-mt-24 pb-8">
-          <div className="mb-6">
-            <span className="text-sm font-semibold text-purple uppercase tracking-wider">About Us</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mt-2">
-              Crafting Confidence, One Cut at a Time
-            </h2>
-          </div>
-          <div className="grid lg:grid-cols-2 gap-8">
-            <div>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                With over a decade of experience in the industry, BarberPro has become synonymous with excellence in men's grooming. Our skilled barbers combine traditional techniques with modern trends to deliver results that exceed expectations.
-              </p>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-3 text-foreground">
-                  <div className="h-2 w-2 rounded-full bg-purple" />
-                  Premium quality products
-                </li>
-                <li className="flex items-center gap-3 text-foreground">
-                  <div className="h-2 w-2 rounded-full bg-purple" />
-                  Appointment flexibility
-                </li>
-                <li className="flex items-center gap-3 text-foreground">
-                  <div className="h-2 w-2 rounded-full bg-purple" />
-                  Satisfaction guaranteed
-                </li>
-              </ul>
-            </div>
-            <div className="grid gap-4">
-              <Card className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-purple/10 text-purple shrink-0">
-                    <Scissors className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">Expert Barbers</h3>
-                    <p className="text-sm text-muted-foreground">Our team consists of certified professionals with years of experience</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-purple/10 text-purple shrink-0">
-                    <Calendar className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">Easy Booking</h3>
-                    <p className="text-sm text-muted-foreground">Book your appointment online anytime, anywhere</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </section>
       </main>
     </div>
   );
