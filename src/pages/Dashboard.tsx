@@ -54,9 +54,6 @@ export default function Dashboard() {
             name,
             duration_minutes,
             price
-          ),
-          profiles (
-            full_name
           )
         `)
         .order("start_time", { ascending: true });
@@ -67,6 +64,18 @@ export default function Dashboard() {
 
       const { data, error } = await query;
       if (error) throw error;
+      
+      if (isAdmin && data.length > 0) {
+        const userIds = [...new Set(data.map(a => a.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        
+        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+        return data.map(a => ({ ...a, profiles: { full_name: profileMap.get(a.user_id) || "Unknown" } })) as Appointment[];
+      }
+      
       return data as Appointment[];
     },
     enabled: !!user,
