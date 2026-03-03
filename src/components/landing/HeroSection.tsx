@@ -34,7 +34,7 @@ export function HeroSection() {
 
           {/* Headline */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up">
-            Your Style,{" "}
+            Stilul tău, la superlativ,{" "}
             <span className="text-gradient">Perfected</span>
           </h1>
 
