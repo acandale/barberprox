@@ -274,9 +274,11 @@ export default function AdminPage() {
     );
   };
 
+  const SLOT_HEIGHT = 40;
+  const DAY_START_HOUR = 8;
+
   const renderDayView = () => {
     const dayAppointments = getAppointmentsForDay(currentDate);
-    // Generate 15-minute slots from 8:00 to 19:45
     const slots: { hour: number; minute: number }[] = [];
     for (let h = 8; h < 20; h++) {
       for (let m = 0; m < 60; m += 15) {
@@ -284,12 +286,8 @@ export default function AdminPage() {
       }
     }
 
-    const getAppointmentForSlot = (hour: number, minute: number) => {
-      return dayAppointments.find((apt) => {
-        const start = parseISO(apt.start_time);
-        return start.getHours() === hour && start.getMinutes() === minute;
-      });
-    };
+    const getSlotIndex = (hour: number, minute: number) =>
+      (hour - DAY_START_HOUR) * 4 + minute / 15;
 
     const isSlotBlocked = (hour: number, minute: number) => {
       const slotTime = new Date(currentDate);
@@ -301,82 +299,96 @@ export default function AdminPage() {
       });
     };
 
-    const isSlotOccupied = (hour: number, minute: number) => {
-      const slotTime = new Date(currentDate);
-      slotTime.setHours(hour, minute, 0, 0);
-      return dayAppointments.some((apt) => {
-        const start = parseISO(apt.start_time);
-        const end = parseISO(apt.end_time);
-        return slotTime >= start && slotTime < end;
-      });
-    };
-
     return (
-      <div className="space-y-0">
+      <div className="relative">
+        {/* Time slots background */}
         {slots.map(({ hour, minute }) => {
-          const apt = getAppointmentForSlot(hour, minute);
           const blocked = isSlotBlocked(hour, minute);
-          const occupied = !apt && isSlotOccupied(hour, minute);
           const isHourMark = minute === 0;
 
           return (
-            <div key={`${hour}-${minute}`} className="flex gap-4">
+            <div
+              key={`${hour}-${minute}`}
+              className="flex gap-4"
+              style={{ height: SLOT_HEIGHT }}
+            >
               <div className={cn(
-                "w-20 text-sm text-muted-foreground py-1 text-right pr-2",
+                "w-20 text-sm text-muted-foreground text-right pr-2 shrink-0 flex items-start pt-1",
                 !isHourMark && "text-xs opacity-60"
               )}>
                 {format(new Date(2000, 0, 1, hour, minute), "h:mm a")}
               </div>
               <div className={cn(
-                "flex-1 min-h-[28px] border-l-2 pl-4 py-0.5",
+                "flex-1 border-l-2 pl-4",
                 isHourMark ? "border-muted-foreground/30" : "border-muted"
               )}>
-                {blocked && !occupied && !apt && (
+                {blocked && (
                   <div className="bg-destructive/15 text-destructive text-xs p-1.5 rounded border border-destructive/20">
                     🚫 {blocked.reason || "Blocked"}
                   </div>
                 )}
-                {apt && (
-                  <Card
-                    className={cn(
-                      "cursor-pointer",
-                      apt.status === "cancelled" && "opacity-50"
-                    )}
-                    onClick={() => setSelectedAppointment(apt)}
-                  >
-                    <CardContent className="p-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={cn(
-                              "w-2 h-8 rounded-full",
-                              SERVICE_COLORS[apt.services.name] || "bg-purple"
-                            )}
-                          />
-                          <div>
-                            <p className="font-medium text-sm">{apt.profiles?.full_name || "Unknown Client"}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {apt.services.name} • {format(parseISO(apt.start_time), "h:mm a")} - {format(parseISO(apt.end_time), "h:mm a")}
-                            </p>
-                          </div>
-                        </div>
-                        <span
-                          className={cn(
-                            "text-xs px-2 py-1 rounded-full",
-                            apt.status === "confirmed"
-                              ? "bg-green-100 text-green-700"
-                              : apt.status === "cancelled"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-gray-100 text-gray-700"
-                          )}
-                        >
-                          {apt.status}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </div>
+            </div>
+          );
+        })}
+
+        {/* Appointments overlay */}
+        {dayAppointments.map((apt) => {
+          const start = parseISO(apt.start_time);
+          const end = parseISO(apt.end_time);
+          const startSlot = getSlotIndex(start.getHours(), start.getMinutes());
+          const durationMinutes = (end.getTime() - start.getTime()) / 60000;
+          const spanSlots = durationMinutes / 15;
+          const leftOffset = 96;
+
+          return (
+            <div
+              key={apt.id}
+              className="absolute right-0"
+              style={{
+                top: startSlot * SLOT_HEIGHT + 2,
+                height: spanSlots * SLOT_HEIGHT - 4,
+                left: leftOffset,
+              }}
+            >
+              <Card
+                className={cn(
+                  "h-full cursor-pointer overflow-hidden",
+                  apt.status === "cancelled" && "opacity-50"
+                )}
+                onClick={() => setSelectedAppointment(apt)}
+              >
+                <CardContent className="p-2 h-full flex items-center">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={cn(
+                          "w-2 rounded-full self-stretch min-h-[20px]",
+                          SERVICE_COLORS[apt.services.name] || "bg-purple"
+                        )}
+                      />
+                      <div>
+                        <p className="font-medium text-sm">{apt.profiles?.full_name || "Unknown Client"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {apt.services.name} • {format(start, "h:mm a")} - {format(end, "h:mm a")}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        "text-xs px-2 py-1 rounded-full shrink-0",
+                        apt.status === "confirmed"
+                          ? "bg-green-100 text-green-700"
+                          : apt.status === "cancelled"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-gray-100 text-gray-700"
+                      )}
+                    >
+                      {apt.status}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           );
         })}
