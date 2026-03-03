@@ -38,26 +38,34 @@ export default function Dashboard() {
   }, [user, authLoading, navigate]);
 
   const { data: appointments = [], isLoading: appointmentsLoading, refetch } = useQuery({
-    queryKey: ["my-appointments", user?.id],
+    queryKey: ["my-appointments", user?.id, isAdmin],
     queryFn: async () => {
       if (!user) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from("appointments")
         .select(`
           id,
           start_time,
           end_time,
           status,
+          user_id,
           services (
             name,
             duration_minutes,
             price
+          ),
+          profiles (
+            full_name
           )
         `)
-        .eq("user_id", user.id)
         .order("start_time", { ascending: true });
 
+      if (!isAdmin) {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as Appointment[];
     },
