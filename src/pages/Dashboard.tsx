@@ -315,7 +315,7 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <span className="text-sm font-medium text-purple">
-                          ${Number(apt.services.price)}
+                          {Number(apt.services.price)} RON
                         </span>
                       </div>
                       <Button
