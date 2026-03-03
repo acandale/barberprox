@@ -15,10 +15,14 @@ interface Appointment {
   start_time: string;
   end_time: string;
   status: string;
+  user_id?: string;
   services: {
     name: string;
     duration_minutes: number;
     price: number;
+  };
+  profiles?: {
+    full_name: string;
   };
 }
 
