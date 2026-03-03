@@ -419,7 +419,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AdminTab)}>
-          <TabsList className="mb-6 flex-wrap">
+          <TabsList className="mb-6 flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="appointments" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Appointments
