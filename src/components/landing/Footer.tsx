@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Scissors, MapPin, Phone, Mail, Clock } from "lucide-react";
 import { useSalonSettings } from "@/hooks/useSalonSettings";
+import { useWorkHours } from "@/hooks/useWorkHours";
 import { useLanguage } from "@/hooks/useLanguage";
 
 export function Footer() {
@@ -16,11 +17,30 @@ export function Footer() {
   const address = settings?.footer_address || "123 Style Street, City";
   const phone = settings?.footer_phone || "(555) 123-4567";
   const email = settings?.footer_email || "hello@barberpro.com";
-  const hours = settings?.footer_hours || [
-    { label: "Mon - Fri: 9AM - 6PM" },
-    { label: "Saturday: 9AM - 5PM" },
-    { label: "Sunday: Closed" },
+  const { data: workHours = [] } = useWorkHours();
+
+  // Helper: Map day_of_week to Romanian day names
+  const days = [
+    "Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă", "Duminică"
   ];
+
+  // Helper: Format time (HH:mm)
+  function formatTime(t: string) {
+    return t?.slice(0, 5) || "";
+  }
+
+  // Helper: Get live open/closed status
+  function getLiveStatus() {
+    const now = new Date();
+    const dayIdx = now.getDay() === 0 ? 6 : now.getDay() - 1; // JS: 0=Sun, 6=Sat
+    const wh = workHours[dayIdx];
+    if (!wh || !wh.is_open) return "Închis";
+    const [h, m] = wh.start_time.split(":").map(Number);
+    const [eh, em] = wh.end_time.split(":").map(Number);
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), eh, em);
+    return now >= start && now <= end ? "Deschis" : "Închis";
+  }
 
   return (
     <footer className="bg-navy text-white">
@@ -75,11 +95,16 @@ export function Footer() {
           {/* Hours */}
           <div>
             <h4 className="font-semibold mb-4">{t("footer.workingHours")}</h4>
+            <div className="mb-2 font-bold text-green-400">
+              {getLiveStatus()}
+            </div>
             <ul className="space-y-3">
-              {hours.map((h, i) => (
-                <li key={i} className="flex items-center gap-3 text-white/60 text-sm">
+              {workHours.map((wh, i) => (
+                <li key={wh.id} className="flex items-center gap-3 text-white/60 text-sm">
                   <Clock className="h-4 w-4 text-purple" />
-                  <span>{h.label}</span>
+                  <span>
+                    {days[wh.day_of_week]}: {wh.is_open ? `${formatTime(wh.start_time)} - ${formatTime(wh.end_time)}` : "Închis"}
+                  </span>
                 </li>
               ))}
             </ul>
