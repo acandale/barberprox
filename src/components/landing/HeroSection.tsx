@@ -1,74 +1,89 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Star, Clock, Loader2 } from "lucide-react";
+import { Calendar, Star, Download } from "lucide-react";
 import heroImage from "@/assets/hero-barber.jpg";
 import { useSalonSettings } from "@/hooks/useSalonSettings";
 import { useLanguage } from "@/hooks/useLanguage";
 
 export function HeroSection() {
   const navigate = useNavigate();
-  const { data: settings, isLoading } = useSalonSettings();
+  const { data: settings } = useSalonSettings();
   const { t } = useLanguage();
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image with Overlay */}
+    // Am schimbat min-h-screen în h-[calc(100vh-64px)] pentru a se potrivi perfect sub Header
+    <section className="relative h-[calc(100vh-64px)] min-h-[600px] flex items-center justify-center overflow-hidden bg-navy">
+      {/* Background Image - Acum mult mai clară */}
       <div className="absolute inset-0">
         <img
           src={settings?.hero_image_url || heroImage}
           alt="Professional barber shop interior"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 gradient-hero opacity-90" />
-        <div className="absolute inset-0 bg-gradient-to-t from-navy/50 to-transparent" />
+        {/* Overlay tip "Vignetă" - Întunecă doar marginile, lasă centrul vibrant */}
+        <div className="absolute inset-0 bg-gradient-to-b from-navy/60 via-transparent to-navy" />
+        <div className="absolute inset-0 bg-navy/20" /> 
       </div>
 
-      {/* Floating Elements */}
-      <div className="absolute top-1/4 left-10 w-20 h-20 bg-purple/20 rounded-full blur-xl animate-float" />
-      <div className="absolute bottom-1/4 right-10 w-32 h-32 bg-purple-light/20 rounded-full blur-xl animate-float" style={{ animationDelay: "2s" }} />
+      {/* Floating Elements - Reduși pentru a nu aglomera vizual */}
+      <div className="absolute top-1/4 left-10 w-32 h-32 bg-purple/10 rounded-full blur-[100px] animate-float" />
+      <div className="absolute bottom-1/4 right-10 w-48 h-48 bg-purple-light/10 rounded-full blur-[120px] animate-float" style={{ animationDelay: "2s" }} />
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 py-32">
-        <div className="max-w-3xl mx-auto text-center">
+      <div className="relative z-10 container mx-auto px-4">
+        <div className="max-w-4xl mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-navy/40 backdrop-blur-md border border-white/10 mb-8 animate-fade-in shadow-2xl">
             <Star className="h-4 w-4 text-purple-light fill-purple-light" />
-            <span className="text-sm font-medium text-white/90">
+            <span className="text-sm font-semibold text-white tracking-wide uppercase">
               {settings?.hero_badge_text || "Premium Grooming Experience"}
             </span>
           </div>
 
-          {/* Headline */}
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up">
+          {/* Headline - Impact vizual mai mare */}
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-[1.1] animate-slide-up tracking-tight">
             {settings?.hero_title || "Stilul tău, la superlativ"}{" "}
-            <span className="text-gradient">{t("hero.perfected")}</span>
+            <span className="text-purple-light block md:inline">{t("hero.perfected")}</span>
           </h1>
 
-          {/* Subheadline */}
-          <p className="text-lg md:text-xl text-white/80 mb-10 max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: "0.1s" }}>
-            {settings?.hero_subtitle || "Book your appointment in seconds."}
+          {/* Subheadline - Contrast mai bun */}
+          <p className="text-lg md:text-2xl text-white/90 mb-10 max-w-2xl mx-auto animate-slide-up font-medium" style={{ animationDelay: "0.1s" }}>
+            {settings?.hero_subtitle || "Programează-te în câteva secunde. Descoperă tunsul de precizie."}
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            <Button variant="hero" size="xl" onClick={() => navigate("/auth?mode=signup")} className="w-full sm:w-auto">
-              <Calendar className="h-5 w-5" />
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            <Button 
+              variant="hero" 
+              size="xl" 
+              onClick={() => navigate("/auth?mode=signup")} 
+              className="w-full sm:w-auto text-lg h-14 px-8 shadow-xl shadow-purple/20 hover:scale-105 transition-transform"
+            >
+              <Calendar className="h-5 w-5 mr-2" />
               {t("hero.bookAppointment")}
             </Button>
-            <Button variant="hero-outline" size="xl" onClick={() => navigate("/#services")} className="w-full sm:w-auto">
+            <Button 
+              variant="hero-outline" 
+              size="xl" 
+              onClick={() => {
+                const el = document.getElementById('services');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }} 
+              className="w-full sm:w-auto text-lg h-14 px-8 backdrop-blur-md border-white/20 hover:bg-white/5"
+            >
               {t("hero.viewServices")}
             </Button>
           </div>
 
-          {/* Stats */}
-          <div className="flex flex-wrap items-center justify-center gap-8 mt-16 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            {(settings?.hero_stats || [{ value: "500+", label: "Happy Clients" }, { value: "4.9", label: "Star Rating" }]).map((stat, i) => (
-              <div key={i} className="flex items-center gap-4">
-                {i > 0 && <div className="w-px h-12 bg-white/20 hidden sm:block" />}
-                <div className="text-center">
-                  <p className="text-3xl md:text-4xl font-bold text-purple-light">{stat.value}</p>
-                  <p className="text-sm text-white/60">{stat.label}</p>
-                </div>
+          {/* Stats - Mai elegante */}
+          <div className="flex flex-wrap items-center justify-center gap-12 mt-20 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+            {(settings?.hero_stats || [
+              { value: "500+", label: "Clienți mulțumiți" }, 
+              { value: "5.0", label: "Rating de 5 Stele" }
+            ]).map((stat, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <p className="text-4xl md:text-5xl font-black text-white">{stat.value}</p>
+                <p className="text-xs uppercase tracking-widest text-white/50 font-bold mt-1">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -76,9 +91,9 @@ export function HeroSection() {
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
-          <div className="w-1.5 h-3 bg-white/50 rounded-full animate-pulse-soft" />
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 hidden md:block">
+        <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-1.5">
+          <div className="w-1 h-2 bg-purple-light rounded-full animate-bounce" />
         </div>
       </div>
     </section>

@@ -7,7 +7,7 @@ export interface WorkHour {
   day_of_week: number;
   start_time: string;
   end_time: string;
-  is_open: boolean;
+  is_working_day: boolean; // Schimbat din is_open în is_working_day
 }
 
 export function useWorkHours() {
@@ -18,6 +18,7 @@ export function useWorkHours() {
         .from("work_hours")
         .select("*")
         .order("day_of_week", { ascending: true });
+        
       if (error) throw error;
       return data as WorkHour[];
     },

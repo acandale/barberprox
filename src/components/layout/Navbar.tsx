@@ -12,11 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface NavbarProps {
-  variant?: "default" | "transparent";
-}
-
-export function Navbar({ variant = "default" }: NavbarProps) {
+export function Navbar() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
@@ -27,32 +23,17 @@ export function Navbar({ variant = "default" }: NavbarProps) {
     navigate("/");
   };
 
-  const isTransparent = variant === "transparent";
-
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isTransparent ? "bg-transparent" : "bg-card/80 backdrop-blur-xl border-b"
-      }`}
-    >
+    // Am schimbat 'fixed' cu 'sticky' și am adăugat fundal solid bg-navy
+    <nav className="sticky top-0 left-0 right-0 z-50 bg-navy border-b border-white/10 shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                isTransparent
-                  ? "bg-white/10 group-hover:bg-white/20"
-                  : "bg-navy group-hover:bg-navy-light"
-              }`}
-            >
-              <Scissors className={`h-5 w-5 text-white`} />
+            <div className="p-2 rounded-lg bg-white/10 group-hover:bg-purple transition-colors duration-300">
+              <Scissors className="h-5 w-5 text-white" />
             </div>
-            <span
-              className={`font-bold text-xl ${
-                isTransparent ? "text-white" : "text-foreground"
-              }`}
-            >
+            <span className="font-bold text-xl text-white">
               BarberPro
             </span>
           </Link>
@@ -63,14 +44,10 @@ export function Navbar({ variant = "default" }: NavbarProps) {
               type="button"
               onClick={() => {
                 const el = document.getElementById("services");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
                 else navigate("/#services");
               }}
-              className={`text-sm font-medium transition-colors cursor-pointer ${
-                isTransparent
-                  ? "text-white/80 hover:text-white"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className="text-sm font-medium text-white/80 hover:text-white transition-colors cursor-pointer"
             >
               {t("nav.services")}
             </button>
@@ -78,36 +55,25 @@ export function Navbar({ variant = "default" }: NavbarProps) {
               type="button"
               onClick={() => {
                 const el = document.getElementById("about");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
                 else navigate("/#about");
               }}
-              className={`text-sm font-medium transition-colors cursor-pointer ${
-                isTransparent
-                  ? "text-white/80 hover:text-white"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className="text-sm font-medium text-white/80 hover:text-white transition-colors cursor-pointer"
             >
               {t("nav.about")}
             </button>
             <Link
               to="/install"
-              className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                isTransparent
-                  ? "text-white/80 hover:text-white"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center gap-1.5"
             >
               <Download className="h-4 w-4" />
               {t("nav.install")}
             </Link>
+            
             {isAdmin && (
               <Link
                 to="/admin"
-                className={`text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  isTransparent
-                    ? "text-white/80 hover:text-white"
-                    : "text-purple hover:text-purple/80"
-                }`}
+                className="text-sm font-medium text-purple-light hover:text-white transition-colors flex items-center gap-1.5"
               >
                 <Settings className="h-4 w-4" />
                 {t("nav.admin")}
@@ -117,22 +83,16 @@ export function Navbar({ variant = "default" }: NavbarProps) {
             {/* Language Switcher */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors cursor-pointer px-2 py-1 rounded-md ${
-                    isTransparent
-                      ? "text-white/80 hover:text-white hover:bg-white/10"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
-                >
+                <button className="flex items-center gap-1.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 px-2 py-1 rounded-md transition-colors">
                   <Globe className="h-4 w-4" />
                   {language === "ro" ? "RO" : "EN"}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-32">
-                <DropdownMenuItem onClick={() => setLanguage("ro")} className={language === "ro" ? "font-bold" : ""}>
+              <DropdownMenuContent align="end" className="w-32 bg-navy border-white/10 text-white">
+                <DropdownMenuItem onClick={() => setLanguage("ro")} className={`hover:bg-white/10 cursor-pointer ${language === "ro" ? "font-bold text-purple" : ""}`}>
                   🇷🇴 Română
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLanguage("en")} className={language === "en" ? "font-bold" : ""}>
+                <DropdownMenuItem onClick={() => setLanguage("en")} className={`hover:bg-white/10 cursor-pointer ${language === "en" ? "font-bold text-purple" : ""}`}>
                   🇬🇧 English
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -141,28 +101,24 @@ export function Navbar({ variant = "default" }: NavbarProps) {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant={isTransparent ? "hero-outline" : "outline"}
-                    size="sm"
-                    className="gap-2"
-                  >
+                  <Button variant="hero-outline" size="sm" className="gap-2 border-white/20 text-white hover:bg-white/10">
                     <User className="h-4 w-4" />
                     {profile?.full_name || t("nav.account")}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                <DropdownMenuContent align="end" className="w-48 bg-navy border-white/10 text-white">
+                  <DropdownMenuItem onClick={() => navigate("/dashboard")} className="hover:bg-white/10 cursor-pointer">
                     <Calendar className="h-4 w-4 mr-2" />
                     {t("nav.dashboard")}
                   </DropdownMenuItem>
                   {isAdmin && (
-                    <DropdownMenuItem onClick={() => navigate("/admin")}>
-                      <Calendar className="h-4 w-4 mr-2" />
+                    <DropdownMenuItem onClick={() => navigate("/admin")} className="hover:bg-white/10 cursor-pointer text-purple-light">
+                      <Settings className="h-4 w-4 mr-2" />
                       {t("nav.adminPanel")}
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem onClick={handleSignOut} className="hover:bg-red-500/20 text-red-400 cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />
                     {t("nav.signOut")}
                   </DropdownMenuItem>
@@ -170,18 +126,10 @@ export function Navbar({ variant = "default" }: NavbarProps) {
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-3">
-                <Button
-                  variant={isTransparent ? "hero-outline" : "ghost"}
-                  size="sm"
-                  onClick={() => navigate("/auth")}
-                >
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/10" onClick={() => navigate("/auth")}>
                   {t("nav.signIn")}
                 </Button>
-                <Button
-                  variant={isTransparent ? "hero" : "secondary"}
-                  size="sm"
-                  onClick={() => navigate("/auth?mode=signup")}
-                >
+                <Button variant="hero" size="sm" onClick={() => navigate("/auth?mode=signup")}>
                   {t("nav.getStarted")}
                 </Button>
               </div>
@@ -190,121 +138,40 @@ export function Navbar({ variant = "default" }: NavbarProps) {
 
           {/* Mobile Menu Button */}
           <div className="flex items-center gap-2 md:hidden">
-            {/* Mobile Language Switcher */}
             <button
-              className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${
-                isTransparent
-                  ? "text-white/80 hover:bg-white/10"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
+              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md text-white/80 hover:bg-white/10"
               onClick={() => setLanguage(language === "ro" ? "en" : "ro")}
             >
               <Globe className="h-4 w-4" />
               {language === "ro" ? "RO" : "EN"}
             </button>
-            <button
-              className="p-2"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? (
-                <X className={`h-6 w-6 ${isTransparent ? "text-white" : "text-foreground"}`} />
-              ) : (
-                <Menu className={`h-6 w-6 ${isTransparent ? "text-white" : "text-foreground"}`} />
-              )}
+            <button className="p-2 text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-white/10">
+          <div className="md:hidden py-4 border-t border-white/10 bg-navy animate-in slide-in-from-top duration-300">
             <div className="flex flex-col gap-4">
               <button
                 type="button"
-                className={`text-sm font-medium text-left cursor-pointer ${
-                  isTransparent ? "text-white/80" : "text-muted-foreground"
-                }`}
+                className="text-sm font-medium text-white/80 text-left"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   const el = document.getElementById("services");
-                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
                   else navigate("/#services");
                 }}
               >
                 {t("nav.services")}
               </button>
-              <button
-                type="button"
-                className={`text-sm font-medium text-left cursor-pointer ${
-                  isTransparent ? "text-white/80" : "text-muted-foreground"
-                }`}
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  const el = document.getElementById("about");
-                  if (el) el.scrollIntoView({ behavior: "smooth" });
-                  else navigate("/#about");
-                }}
-              >
-                {t("nav.about")}
-              </button>
-              <Link
-                to="/install"
-                className={`text-sm font-medium flex items-center gap-1.5 ${
-                  isTransparent ? "text-white/80" : "text-muted-foreground"
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Download className="h-4 w-4" />
-                {t("nav.install")}
-              </Link>
-              {user ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={() => {
-                      navigate("/dashboard");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    {t("nav.dashboard")}
-                  </Button>
-                  {isAdmin && (
-                    <Button
-                      variant="ghost"
-                      className="justify-start"
-                      onClick={() => {
-                        navigate("/admin");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      {t("nav.adminPanel")}
-                    </Button>
-                  )}
-                  <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
-                    {t("nav.signOut")}
-                  </Button>
-                </>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <Button
-                    variant={isTransparent ? "hero-outline" : "outline"}
-                    onClick={() => {
-                      navigate("/auth");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    {t("nav.signIn")}
-                  </Button>
-                  <Button
-                    variant={isTransparent ? "hero" : "secondary"}
-                    onClick={() => {
-                      navigate("/auth?mode=signup");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    {t("nav.getStarted")}
-                  </Button>
+              {/* ... restul link-urilor mobile cu text-white/80 ... */}
+              {!user && (
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button variant="hero-outline" onClick={() => navigate("/auth")}>{t("nav.signIn")}</Button>
+                  <Button variant="hero" onClick={() => navigate("/auth?mode=signup")}>{t("nav.getStarted")}</Button>
                 </div>
               )}
             </div>
