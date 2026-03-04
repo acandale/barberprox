@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export default function Dashboard() {
   const { user, profile, isLoading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -113,14 +115,14 @@ export default function Dashboard() {
 
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to cancel appointment",
+        title: t("dashboard.error"),
+        description: t("dashboard.cancelFailed"),
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Appointment cancelled",
-        description: "Your appointment has been cancelled successfully",
+        title: t("dashboard.cancelled"),
+        description: t("dashboard.cancelledDesc"),
       });
       refetch();
     }
@@ -142,10 +144,10 @@ export default function Dashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">
-            Welcome back, {profile?.full_name?.split(" ")[0] || "there"}!
+            {t("dashboard.welcome")} {profile?.full_name?.split(" ")[0] || "there"}!
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage your appointments and bookings
+            {t("dashboard.manage")}
           </p>
         </div>
 
@@ -153,14 +155,14 @@ export default function Dashboard() {
           <Card className="mb-6 border-purple/30 bg-purple/5">
             <CardContent className="py-4 flex items-center justify-between">
               <p className="text-sm font-medium text-purple">
-                You have admin access
+                {t("dashboard.adminAccess")}
               </p>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => navigate("/admin")}
               >
-                Go to Admin Panel
+                {t("dashboard.goAdmin")}
               </Button>
             </CardContent>
           </Card>
@@ -172,10 +174,10 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-purple" />
-                Next Appointment
+                {t("dashboard.nextAppointment")}
               </CardTitle>
               <CardDescription>
-                {isAdmin ? "Next upcoming appointment (all clients)" : "Your upcoming scheduled appointment"}
+                {isAdmin ? t("dashboard.nextAllClients") : t("dashboard.nextYour")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -200,7 +202,7 @@ export default function Dashboard() {
                       {nextAppointment.services.name}
                     </p>
                     {isAdmin && nextAppointment.profiles?.full_name && (
-                      <p className="text-white/80 text-sm">Client: {nextAppointment.profiles.full_name}</p>
+                      <p className="text-white/80 text-sm">{t("dashboard.client")}: {nextAppointment.profiles.full_name}</p>
                     )}
                     <div className="flex items-center gap-4 text-white/70 text-sm">
                       <span className="flex items-center gap-1">
@@ -216,7 +218,7 @@ export default function Dashboard() {
                     size="sm"
                     onClick={() => handleCancelAppointment(nextAppointment.id)}
                   >
-                    Cancel Appointment
+                    {t("dashboard.cancelAppointment")}
                   </Button>
                 </div>
               ) : (
@@ -225,11 +227,11 @@ export default function Dashboard() {
                     <Calendar className="h-8 w-8 text-muted-foreground" />
                   </div>
                   <p className="text-muted-foreground mb-4">
-                    No upcoming appointments
+                    {t("dashboard.noUpcoming")}
                   </p>
                   <Button variant="hero" onClick={() => navigate("/book")}>
                     <Plus className="h-4 w-4" />
-                    Book Now
+                    {t("dashboard.bookNow")}
                   </Button>
                 </div>
               )}
@@ -239,7 +241,7 @@ export default function Dashboard() {
           {/* Quick Actions */}
           <Card variant="elevated">
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>{t("dashboard.quickActions")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
@@ -248,7 +250,7 @@ export default function Dashboard() {
                 onClick={() => navigate("/book")}
               >
                 <Plus className="h-4 w-4" />
-                Book New Appointment
+                {t("dashboard.bookNew")}
               </Button>
               <Button
                 variant="outline"
@@ -256,17 +258,17 @@ export default function Dashboard() {
                 onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
               >
                 <Scissors className="h-4 w-4" />
-                View Services
+                {t("dashboard.viewServices")}
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* All Appointments - Admin: today's all clients, Client: own upcoming */}
+        {/* All Appointments */}
         {isAdmin ? (
           todayAppointments.length > 0 && (
             <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4">Today's Appointments (All Clients)</h2>
+              <h2 className="text-xl font-semibold mb-4">{t("dashboard.todayAppointments")}</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {todayAppointments.map((apt) => (
                   <Card key={apt.id} variant="default">
@@ -278,7 +280,7 @@ export default function Dashboard() {
                             {format(parseISO(apt.start_time), "h:mm a")} - {format(parseISO(apt.end_time), "h:mm a")}
                           </p>
                           {apt.profiles?.full_name && (
-                            <p className="text-xs text-purple mt-1">Client: {apt.profiles.full_name}</p>
+                            <p className="text-xs text-purple mt-1">{t("dashboard.client")}: {apt.profiles.full_name}</p>
                           )}
                         </div>
                         <span className="text-sm font-medium text-purple">
@@ -291,7 +293,7 @@ export default function Dashboard() {
                         className="text-destructive hover:text-destructive"
                         onClick={() => handleCancelAppointment(apt.id)}
                       >
-                        Cancel
+                        {t("dashboard.cancel")}
                       </Button>
                     </CardContent>
                   </Card>
@@ -302,7 +304,7 @@ export default function Dashboard() {
         ) : (
           upcomingAppointments.length > 1 && (
             <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4">All Upcoming Appointments</h2>
+              <h2 className="text-xl font-semibold mb-4">{t("dashboard.allUpcoming")}</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {upcomingAppointments.slice(1).map((apt) => (
                   <Card key={apt.id} variant="default">
@@ -324,7 +326,7 @@ export default function Dashboard() {
                         className="text-destructive hover:text-destructive"
                         onClick={() => handleCancelAppointment(apt.id)}
                       >
-                        Cancel
+                        {t("dashboard.cancel")}
                       </Button>
                     </CardContent>
                   </Card>

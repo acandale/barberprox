@@ -1,5 +1,6 @@
 import { CheckCircle, Award, Users, Shield } from "lucide-react";
 import { useSalonSettings } from "@/hooks/useSalonSettings";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const iconMap: Record<string, React.ReactNode> = {
   Award: <Award className="h-6 w-6" />,
@@ -9,6 +10,7 @@ const iconMap: Record<string, React.ReactNode> = {
 
 export function AboutSection() {
   const { data: settings } = useSalonSettings();
+  const { t } = useLanguage();
 
   const features = settings?.about_features || [
     "Premium quality products",
@@ -32,7 +34,7 @@ export function AboutSection() {
           {/* Content */}
           <div>
             <span className="text-sm font-semibold text-purple uppercase tracking-wider">
-              About Us
+              {t("about.label")}
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 mb-6">
               <span className="text-gradient">{title}</span>

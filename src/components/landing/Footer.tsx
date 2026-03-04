@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { Scissors, MapPin, Phone, Mail, Clock } from "lucide-react";
 import { useSalonSettings } from "@/hooks/useSalonSettings";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export function Footer() {
   const { data: settings } = useSalonSettings();
+  const { t } = useLanguage();
 
   const salonName = settings?.salon_name || "BarberPro";
   const quickLinks = settings?.quick_links || [
@@ -39,7 +41,7 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-semibold mb-4">Quick Links</h4>
+            <h4 className="font-semibold mb-4">{t("footer.quickLinks")}</h4>
             <ul className="space-y-3">
               {quickLinks.map((link, i) => (
                 <li key={i}>
@@ -53,7 +55,7 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="font-semibold mb-4">Contact</h4>
+            <h4 className="font-semibold mb-4">{t("footer.contact")}</h4>
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-white/60 text-sm">
                 <MapPin className="h-4 w-4 text-purple" />
@@ -72,7 +74,7 @@ export function Footer() {
 
           {/* Hours */}
           <div>
-            <h4 className="font-semibold mb-4">Working Hours</h4>
+            <h4 className="font-semibold mb-4">{t("footer.workingHours")}</h4>
             <ul className="space-y-3">
               {hours.map((h, i) => (
                 <li key={i} className="flex items-center gap-3 text-white/60 text-sm">
@@ -87,7 +89,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-white/10 mt-12 pt-8 text-center">
           <p className="text-white/40 text-sm">
-            © {new Date().getFullYear()} {salonName}. All rights reserved.
+            © {new Date().getFullYear()} {salonName}. {t("footer.rights")}
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<AdminTab>("appointments");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -413,8 +415,8 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage appointments, work hours, and blocked times</p>
+            <h1 className="text-3xl font-bold text-foreground">{t("admin.dashboard")}</h1>
+            <p className="text-muted-foreground">{t("admin.manageDesc")}</p>
           </div>
         </div>
 
@@ -423,27 +425,27 @@ export default function AdminPage() {
           <TabsList className="mb-6 flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="appointments" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Appointments
+              {t("admin.appointments")}
             </TabsTrigger>
             <TabsTrigger value="services" className="flex items-center gap-2">
               <Scissors className="h-4 w-4" />
-              Services
+              {t("admin.services")}
             </TabsTrigger>
             <TabsTrigger value="work-hours" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Work Hours
+              {t("admin.workHours")}
             </TabsTrigger>
             <TabsTrigger value="blocked-times" className="flex items-center gap-2">
               <CalendarOff className="h-4 w-4" />
-              Block Times
+              {t("admin.blockTimes")}
             </TabsTrigger>
             <TabsTrigger value="vacations" className="flex items-center gap-2">
               <CalendarOff className="h-4 w-4" />
-              Vacations
+              {t("admin.vacations")}
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Settings
+              {t("admin.settings")}
             </TabsTrigger>
           </TabsList>
 
@@ -509,21 +511,21 @@ export default function AdminPage() {
                       size="sm"
                       onClick={() => setViewMode("month")}
                     >
-                      Month
+                      {t("admin.month")}
                     </Button>
                     <Button
                       variant={viewMode === "day" ? "secondary" : "ghost"}
                       size="sm"
                       onClick={() => setViewMode("day")}
                     >
-                      Day
+                      {t("admin.day")}
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentDate(new Date())}
                     >
-                      Today
+                      {t("admin.today")}
                     </Button>
                   </div>
                 </div>
@@ -569,7 +571,7 @@ export default function AdminPage() {
           <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Appointment Details</DialogTitle>
+                <DialogTitle>{t("admin.appointmentDetails")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div className="flex items-center gap-3">
@@ -577,12 +579,12 @@ export default function AdminPage() {
                     <User className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="font-semibold">{selectedAppointment.profiles?.full_name || "Unknown Client"}</p>
+                    <p className="font-semibold">{selectedAppointment.profiles?.full_name || t("admin.unknownClient")}</p>
                     <p className="text-sm text-muted-foreground">
-                      {selectedAppointment.profiles?.email || "No email"}
+                      {selectedAppointment.profiles?.email || t("admin.noEmail")}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {selectedAppointment.profiles?.phone || "No phone"}
+                      {selectedAppointment.profiles?.phone || t("admin.noPhone")}
                     </p>
                   </div>
                 </div>
@@ -594,7 +596,7 @@ export default function AdminPage() {
                   <div>
                     <p className="font-semibold">{selectedAppointment.services.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {selectedAppointment.services.duration_minutes} minutes • $
+                      {selectedAppointment.services.duration_minutes} {t("admin.minutes")} • $
                       {Number(selectedAppointment.services.price)}
                     </p>
                   </div>

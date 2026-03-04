@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { Scissors, Menu, X, User, Calendar, LogOut, Settings, Download } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
+import { Scissors, Menu, X, User, Calendar, LogOut, Settings, Download, Globe } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ interface NavbarProps {
 
 export function Navbar({ variant = "default" }: NavbarProps) {
   const { user, profile, isAdmin, signOut } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -44,7 +46,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                   : "bg-navy group-hover:bg-navy-light"
               }`}
             >
-              <Scissors className={`h-5 w-5 ${isTransparent ? "text-white" : "text-white"}`} />
+              <Scissors className={`h-5 w-5 text-white`} />
             </div>
             <span
               className={`font-bold text-xl ${
@@ -70,7 +72,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Services
+              {t("nav.services")}
             </button>
             <button
               type="button"
@@ -85,7 +87,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              About
+              {t("nav.about")}
             </button>
             <Link
               to="/install"
@@ -96,7 +98,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
               }`}
             >
               <Download className="h-4 w-4" />
-              Install App
+              {t("nav.install")}
             </Link>
             {isAdmin && (
               <Link
@@ -108,9 +110,33 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                 }`}
               >
                 <Settings className="h-4 w-4" />
-                Admin
+                {t("nav.admin")}
               </Link>
             )}
+
+            {/* Language Switcher */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors cursor-pointer px-2 py-1 rounded-md ${
+                    isTransparent
+                      ? "text-white/80 hover:text-white hover:bg-white/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Globe className="h-4 w-4" />
+                  {language === "ro" ? "RO" : "EN"}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-32">
+                <DropdownMenuItem onClick={() => setLanguage("ro")} className={language === "ro" ? "font-bold" : ""}>
+                  🇷🇴 Română
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage("en")} className={language === "en" ? "font-bold" : ""}>
+                  🇬🇧 English
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {user ? (
               <DropdownMenu>
@@ -121,24 +147,24 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                     className="gap-2"
                   >
                     <User className="h-4 w-4" />
-                    {profile?.full_name || "Account"}
+                    {profile?.full_name || t("nav.account")}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => navigate("/dashboard")}>
                     <Calendar className="h-4 w-4 mr-2" />
-                    Dashboard
+                    {t("nav.dashboard")}
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate("/admin")}>
                       <Calendar className="h-4 w-4 mr-2" />
-                      Admin Panel
+                      {t("nav.adminPanel")}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
+                    {t("nav.signOut")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -149,30 +175,44 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                   size="sm"
                   onClick={() => navigate("/auth")}
                 >
-                  Sign In
+                  {t("nav.signIn")}
                 </Button>
                 <Button
                   variant={isTransparent ? "hero" : "secondary"}
                   size="sm"
                   onClick={() => navigate("/auth?mode=signup")}
                 >
-                  Get Started
+                  {t("nav.getStarted")}
                 </Button>
               </div>
             )}
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? (
-              <X className={`h-6 w-6 ${isTransparent ? "text-white" : "text-foreground"}`} />
-            ) : (
-              <Menu className={`h-6 w-6 ${isTransparent ? "text-white" : "text-foreground"}`} />
-            )}
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            {/* Mobile Language Switcher */}
+            <button
+              className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${
+                isTransparent
+                  ? "text-white/80 hover:bg-white/10"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+              onClick={() => setLanguage(language === "ro" ? "en" : "ro")}
+            >
+              <Globe className="h-4 w-4" />
+              {language === "ro" ? "RO" : "EN"}
+            </button>
+            <button
+              className="p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? (
+                <X className={`h-6 w-6 ${isTransparent ? "text-white" : "text-foreground"}`} />
+              ) : (
+                <Menu className={`h-6 w-6 ${isTransparent ? "text-white" : "text-foreground"}`} />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -191,7 +231,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                   else navigate("/#services");
                 }}
               >
-                Services
+                {t("nav.services")}
               </button>
               <button
                 type="button"
@@ -205,7 +245,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                   else navigate("/#about");
                 }}
               >
-                About
+                {t("nav.about")}
               </button>
               <Link
                 to="/install"
@@ -215,7 +255,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Download className="h-4 w-4" />
-                Install App
+                {t("nav.install")}
               </Link>
               {user ? (
                 <>
@@ -227,7 +267,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                       setMobileMenuOpen(false);
                     }}
                   >
-                    Dashboard
+                    {t("nav.dashboard")}
                   </Button>
                   {isAdmin && (
                     <Button
@@ -238,11 +278,11 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                         setMobileMenuOpen(false);
                       }}
                     >
-                      Admin Panel
+                      {t("nav.adminPanel")}
                     </Button>
                   )}
                   <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
-                    Sign Out
+                    {t("nav.signOut")}
                   </Button>
                 </>
               ) : (
@@ -254,7 +294,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                       setMobileMenuOpen(false);
                     }}
                   >
-                    Sign In
+                    {t("nav.signIn")}
                   </Button>
                   <Button
                     variant={isTransparent ? "hero" : "secondary"}
@@ -263,7 +303,7 @@ export function Navbar({ variant = "default" }: NavbarProps) {
                       setMobileMenuOpen(false);
                     }}
                   >
-                    Get Started
+                    {t("nav.getStarted")}
                   </Button>
                 </div>
               )}
