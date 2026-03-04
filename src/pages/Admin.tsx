@@ -45,6 +45,7 @@ import { BlockedTimesCalendar } from "@/components/admin/BlockedTimesCalendar";
 import { ServicesManager } from "@/components/admin/ServicesManager";
 import { VacationsManager } from "@/components/admin/VacationsManager";
 import { AdminBookAppointment } from "@/components/admin/AdminBookAppointment";
+import { SalonSettingsManager } from "@/components/admin/SalonSettingsManager";
 
 interface ProfileInfo {
   full_name: string;
@@ -440,6 +441,10 @@ export default function AdminPage() {
               <CalendarOff className="h-4 w-4" />
               Vacations
             </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
+            </TabsTrigger>
           </TabsList>
 
           {/* Appointments Tab */}
@@ -551,6 +556,11 @@ export default function AdminPage() {
           {/* Vacations Tab */}
           <TabsContent value="vacations">
             <VacationsManager />
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <SalonSettingsManager />
           </TabsContent>
         </Tabs>
 
