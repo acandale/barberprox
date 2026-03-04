@@ -24,107 +24,47 @@ export function Navbar() {
   };
 
   return (
-    // Am schimbat 'fixed' cu 'sticky' și am adăugat fundal solid bg-navy
     <nav className="sticky top-0 left-0 right-0 z-50 bg-navy border-b border-white/10 shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+          {/* Logo - Păstrat simplu și clar */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="p-2 rounded-lg bg-white/10 group-hover:bg-purple transition-colors duration-300">
               <Scissors className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-xl text-white">
+            <span className="font-bold text-xl text-white tracking-tight">
               BarberPro
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - Neschimbat pentru că avem spațiu */}
           <div className="hidden md:flex items-center gap-6">
-            <button
-              type="button"
-              onClick={() => {
-                const el = document.getElementById("services");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                else navigate("/#services");
-              }}
-              className="text-sm font-medium text-white/80 hover:text-white transition-colors cursor-pointer"
-            >
+            <button onClick={() => {
+              const el = document.getElementById("services");
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }} className="text-sm font-medium text-white/70 hover:text-white transition-colors cursor-pointer">
               {t("nav.services")}
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                const el = document.getElementById("about");
-                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                else navigate("/#about");
-              }}
-              className="text-sm font-medium text-white/80 hover:text-white transition-colors cursor-pointer"
-            >
-              {t("nav.about")}
-            </button>
-            <Link
-              to="/install"
-              className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center gap-1.5"
-            >
+            
+            <Link to="/install" className="text-sm font-medium text-white/70 hover:text-white transition-colors flex items-center gap-1.5">
               <Download className="h-4 w-4" />
               {t("nav.install")}
             </Link>
-            
-            {isAdmin && (
-              <Link
-                to="/admin"
-                className="text-sm font-medium text-purple-light hover:text-white transition-colors flex items-center gap-1.5"
-              >
-                <Settings className="h-4 w-4" />
-                {t("nav.admin")}
-              </Link>
-            )}
 
-            {/* Language Switcher */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 px-2 py-1 rounded-md transition-colors">
+                <button className="flex items-center gap-1.5 text-sm font-medium text-white/70 hover:text-white transition-colors uppercase">
                   <Globe className="h-4 w-4" />
-                  {language === "ro" ? "RO" : "EN"}
+                  {language}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-32 bg-navy border-white/10 text-white">
-                <DropdownMenuItem onClick={() => setLanguage("ro")} className={`hover:bg-white/10 cursor-pointer ${language === "ro" ? "font-bold text-purple" : ""}`}>
-                  🇷🇴 Română
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLanguage("en")} className={`hover:bg-white/10 cursor-pointer ${language === "en" ? "font-bold text-purple" : ""}`}>
-                  🇬🇧 English
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="bg-navy border-white/10 text-white">
+                <DropdownMenuItem onClick={() => setLanguage("ro")} className="cursor-pointer hover:bg-white/10">RO Română</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage("en")} className="cursor-pointer hover:bg-white/10">EN English</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="hero-outline" size="sm" className="gap-2 border-white/20 text-white hover:bg-white/10">
-                    <User className="h-4 w-4" />
-                    {profile?.full_name || t("nav.account")}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-navy border-white/10 text-white">
-                  <DropdownMenuItem onClick={() => navigate("/dashboard")} className="hover:bg-white/10 cursor-pointer">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {t("nav.dashboard")}
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem onClick={() => navigate("/admin")} className="hover:bg-white/10 cursor-pointer text-purple-light">
-                      <Settings className="h-4 w-4 mr-2" />
-                      {t("nav.adminPanel")}
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem onClick={handleSignOut} className="hover:bg-red-500/20 text-red-400 cursor-pointer">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    {t("nav.signOut")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
+            {!user ? (
               <div className="flex items-center gap-3">
                 <Button variant="ghost" size="sm" className="text-white hover:bg-white/10" onClick={() => navigate("/auth")}>
                   {t("nav.signIn")}
@@ -133,46 +73,84 @@ export function Navbar() {
                   {t("nav.getStarted")}
                 </Button>
               </div>
+            ) : (
+              /* Meniu profil existent */
+              <Button variant="hero-outline" size="sm" onClick={() => navigate("/dashboard")} className="gap-2 border-white/20 text-white">
+                <User className="h-4 w-4" />
+                {profile?.full_name || t("nav.account")}
+              </Button>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex items-center gap-2 md:hidden">
+          {/* Mobile Navigation - AICI ESTE RESTRUCTURAREA PREMIUM */}
+          <div className="flex items-center gap-3 md:hidden">
+            {/* Butonul de Acțiune Principală (Singurul care rămâne pe mobil) */}
+            {!user && (
+              <Button 
+                variant="hero" 
+                size="sm" 
+                className="h-9 px-4 text-xs font-bold shadow-lg shadow-purple/20"
+                onClick={() => navigate("/auth?mode=signup")}
+              >
+                {t("nav.getStarted")}
+              </Button>
+            )}
+
+            {/* Selector Limbă Minimalist pe mobil */}
             <button
-              className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md text-white/80 hover:bg-white/10"
+              className="p-2 text-white/70 flex items-center gap-1 text-xs font-bold uppercase"
               onClick={() => setLanguage(language === "ro" ? "en" : "ro")}
             >
               <Globe className="h-4 w-4" />
-              {language === "ro" ? "RO" : "EN"}
+              {language}
             </button>
-            <button className="p-2 text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+
+            {/* Butonul Hamburger - Poziționat la final */}
+            <button 
+              className="p-2 text-white bg-white/5 rounded-lg active:scale-95 transition-transform" 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu Overlay - Curat și organizat */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-white/10 bg-navy animate-in slide-in-from-top duration-300">
-            <div className="flex flex-col gap-4">
+          <div className="md:hidden py-6 border-t border-white/10 bg-navy/95 backdrop-blur-xl animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex flex-col gap-5 px-2">
               <button
-                type="button"
-                className="text-sm font-medium text-white/80 text-left"
+                className="text-lg font-semibold text-white/90 text-left flex items-center justify-between"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  const el = document.getElementById("services");
-                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                  else navigate("/#services");
+                  document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
                 }}
               >
                 {t("nav.services")}
               </button>
-              {/* ... restul link-urilor mobile cu text-white/80 ... */}
-              {!user && (
-                <div className="flex flex-col gap-2 pt-2">
-                  <Button variant="hero-outline" onClick={() => navigate("/auth")}>{t("nav.signIn")}</Button>
-                  <Button variant="hero" onClick={() => navigate("/auth?mode=signup")}>{t("nav.getStarted")}</Button>
-                </div>
+              
+              <Link to="/install" className="text-lg font-semibold text-white/90 flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
+                <Download className="h-5 w-5" /> {t("nav.install")}
+              </Link>
+
+              <DropdownMenuSeparator className="bg-white/10 my-2" />
+
+              {!user ? (
+                <button
+                  className="text-lg font-semibold text-purple-light text-left flex items-center gap-2"
+                  onClick={() => { navigate("/auth"); setMobileMenuOpen(false); }}
+                >
+                  <User className="h-5 w-5" /> {t("nav.signIn")}
+                </button>
+              ) : (
+                <>
+                  <Link to="/dashboard" className="text-lg font-semibold text-white/90" onClick={() => setMobileMenuOpen(false)}>
+                    {t("nav.dashboard")}
+                  </Link>
+                  <button onClick={handleSignOut} className="text-lg font-semibold text-red-400 text-left flex items-center gap-2">
+                    <LogOut className="h-5 w-5" /> {t("nav.signOut")}
+                  </button>
+                </>
               )}
             </div>
           </div>

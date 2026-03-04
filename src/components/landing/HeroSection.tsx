@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Star, Download } from "lucide-react";
+import { Calendar, Star } from "lucide-react";
 import heroImage from "@/assets/hero-barber.jpg";
 import { useSalonSettings } from "@/hooks/useSalonSettings";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -11,45 +11,45 @@ export function HeroSection() {
   const { t } = useLanguage();
 
   return (
-    // Am schimbat min-h-screen în h-[calc(100vh-64px)] pentru a se potrivi perfect sub Header
     <section className="relative h-[calc(100vh-64px)] min-h-[600px] flex items-center justify-center overflow-hidden bg-navy">
-      {/* Background Image - Acum mult mai clară */}
+      {/* Background Image */}
       <div className="absolute inset-0">
         <img
           src={settings?.hero_image_url || heroImage}
           alt="Professional barber shop interior"
           className="w-full h-full object-cover"
         />
-        {/* Overlay tip "Vignetă" - Întunecă doar marginile, lasă centrul vibrant */}
+        {/* Gradientul care păstrează imaginea vie în centru */}
         <div className="absolute inset-0 bg-gradient-to-b from-navy/60 via-transparent to-navy" />
         <div className="absolute inset-0 bg-navy/20" /> 
       </div>
 
-      {/* Floating Elements - Reduși pentru a nu aglomera vizual */}
-      <div className="absolute top-1/4 left-10 w-32 h-32 bg-purple/10 rounded-full blur-[100px] animate-float" />
-      <div className="absolute bottom-1/4 right-10 w-48 h-48 bg-purple-light/10 rounded-full blur-[120px] animate-float" style={{ animationDelay: "2s" }} />
-
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-navy/40 backdrop-blur-md border border-white/10 mb-8 animate-fade-in shadow-2xl">
-            <Star className="h-4 w-4 text-purple-light fill-purple-light" />
-            <span className="text-sm font-semibold text-white tracking-wide uppercase">
-              {settings?.hero_badge_text || "Premium Grooming Experience"}
-            </span>
-          </div>
+          {/* Badge - Afișat doar dacă există text în DB */}
+          {settings?.hero_badge_text && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-navy/40 backdrop-blur-md border border-white/10 mb-8 animate-fade-in shadow-2xl">
+              <Star className="h-4 w-4 text-purple-light fill-purple-light" />
+              <span className="text-sm font-semibold text-white tracking-wide uppercase">
+                {settings.hero_badge_text}
+              </span>
+            </div>
+          )}
 
-          {/* Headline - Impact vizual mai mare */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-[1.1] animate-slide-up tracking-tight">
-            {settings?.hero_title || "Stilul tău, la superlativ"}{" "}
-            <span className="text-purple-light block md:inline">{t("hero.perfected")}</span>
-          </h1>
+          {/* Headline - Fără cuvinte hardcodate (Perfected a fost eliminat) */}
+          {settings?.hero_title && (
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-[1.1] animate-slide-up tracking-tight">
+              {settings.hero_title}
+            </h1>
+          )}
 
-          {/* Subheadline - Contrast mai bun */}
-          <p className="text-lg md:text-2xl text-white/90 mb-10 max-w-2xl mx-auto animate-slide-up font-medium" style={{ animationDelay: "0.1s" }}>
-            {settings?.hero_subtitle || "Programează-te în câteva secunde. Descoperă tunsul de precizie."}
-          </p>
+          {/* Subheadline - Afișat doar dacă este configurat */}
+          {settings?.hero_subtitle && (
+            <p className="text-lg md:text-2xl text-white/90 mb-10 max-w-2xl mx-auto animate-slide-up font-medium" style={{ animationDelay: "0.1s" }}>
+              {settings.hero_subtitle}
+            </p>
+          )}
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-5 animate-slide-up" style={{ animationDelay: "0.2s" }}>
@@ -75,18 +75,17 @@ export function HeroSection() {
             </Button>
           </div>
 
-          {/* Stats - Mai elegante */}
-          <div className="flex flex-wrap items-center justify-center gap-12 mt-20 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            {(settings?.hero_stats || [
-              { value: "500+", label: "Clienți mulțumiți" }, 
-              { value: "5.0", label: "Rating de 5 Stele" }
-            ]).map((stat, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <p className="text-4xl md:text-5xl font-black text-white">{stat.value}</p>
-                <p className="text-xs uppercase tracking-widest text-white/50 font-bold mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+          {/* Stats - Păstrate doar dacă sunt în DB, altfel ascunse */}
+          {settings?.hero_stats && (
+            <div className="flex flex-wrap items-center justify-center gap-12 mt-20 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+              {settings.hero_stats.map((stat: any, i: number) => (
+                <div key={i} className="flex flex-col items-center">
+                  <p className="text-4xl md:text-5xl font-black text-white">{stat.value}</p>
+                  <p className="text-xs uppercase tracking-widest text-white/50 font-bold mt-1">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
