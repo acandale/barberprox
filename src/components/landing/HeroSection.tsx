@@ -1,17 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Star, Clock } from "lucide-react";
+import { Calendar, Star, Clock, Loader2 } from "lucide-react";
 import heroImage from "@/assets/hero-barber.jpg";
+import { useSalonSettings } from "@/hooks/useSalonSettings";
 
 export function HeroSection() {
   const navigate = useNavigate();
+  const { data: settings, isLoading } = useSalonSettings();
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <img
-          src={heroImage}
+          src={settings?.hero_image_url || heroImage}
           alt="Professional barber shop interior"
           className="w-full h-full object-cover"
         />
@@ -29,60 +31,44 @@ export function HeroSection() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-8 animate-fade-in">
             <Star className="h-4 w-4 text-purple-light fill-purple-light" />
-            <span className="text-sm font-medium text-white/90">Premium Grooming Experience</span>
+            <span className="text-sm font-medium text-white/90">
+              {settings?.hero_badge_text || "Premium Grooming Experience"}
+            </span>
           </div>
 
           {/* Headline */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up">
-            Stilul tău, la superlativ,{" "}
+            {settings?.hero_title || "Stilul tău, la superlativ"}{" "}
             <span className="text-gradient">Perfected</span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-white/80 mb-10 max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: "0.1s" }}>
-            Book your appointment in seconds. Experience premium haircuts and grooming services from skilled professionals.
+            {settings?.hero_subtitle || "Book your appointment in seconds."}
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            <Button
-              variant="hero"
-              size="xl"
-              onClick={() => navigate("/auth?mode=signup")}
-              className="w-full sm:w-auto"
-            >
+            <Button variant="hero" size="xl" onClick={() => navigate("/auth?mode=signup")} className="w-full sm:w-auto">
               <Calendar className="h-5 w-5" />
               Book Appointment
             </Button>
-            <Button
-              variant="hero-outline"
-              size="xl"
-              onClick={() => navigate("/#services")}
-              className="w-full sm:w-auto"
-            >
+            <Button variant="hero-outline" size="xl" onClick={() => navigate("/#services")} className="w-full sm:w-auto">
               View Services
             </Button>
           </div>
 
           {/* Stats */}
           <div className="flex flex-wrap items-center justify-center gap-8 mt-16 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            <div className="text-center">
-              <p className="text-3xl md:text-4xl font-bold text-purple-light">500+</p>
-              <p className="text-sm text-white/60">Happy Clients</p>
-            </div>
-            <div className="w-px h-12 bg-white/20 hidden sm:block" />
-            <div className="text-center">
-              <p className="text-3xl md:text-4xl font-bold text-purple-light">4.9</p>
-              <p className="text-sm text-white/60">Star Rating</p>
-            </div>
-            <div className="w-px h-12 bg-white/20 hidden sm:block" />
-            <div className="text-center flex items-center gap-2">
-              <Clock className="h-5 w-5 text-purple-light" />
-              <div>
-                <p className="text-lg font-semibold text-white">Mon-Sat</p>
-                <p className="text-sm text-white/60">9AM - 6PM</p>
+            {(settings?.hero_stats || [{ value: "500+", label: "Happy Clients" }, { value: "4.9", label: "Star Rating" }]).map((stat, i) => (
+              <div key={i} className="flex items-center gap-4">
+                {i > 0 && <div className="w-px h-12 bg-white/20 hidden sm:block" />}
+                <div className="text-center">
+                  <p className="text-3xl md:text-4xl font-bold text-purple-light">{stat.value}</p>
+                  <p className="text-sm text-white/60">{stat.label}</p>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
