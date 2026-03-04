@@ -163,6 +163,69 @@ export type Database = {
         }
         Relationships: []
       }
+      salon_settings: {
+        Row: {
+          about_cards: Json
+          about_description: string
+          about_features: Json
+          about_title: string
+          created_at: string | null
+          footer_address: string
+          footer_email: string
+          footer_hours: Json
+          footer_phone: string
+          hero_badge_text: string
+          hero_image_url: string | null
+          hero_stats: Json
+          hero_subtitle: string
+          hero_title: string
+          id: string
+          quick_links: Json
+          salon_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          about_cards?: Json
+          about_description?: string
+          about_features?: Json
+          about_title?: string
+          created_at?: string | null
+          footer_address?: string
+          footer_email?: string
+          footer_hours?: Json
+          footer_phone?: string
+          hero_badge_text?: string
+          hero_image_url?: string | null
+          hero_stats?: Json
+          hero_subtitle?: string
+          hero_title?: string
+          id?: string
+          quick_links?: Json
+          salon_name?: string
+          updated_at?: string | null
+        }
+        Update: {
+          about_cards?: Json
+          about_description?: string
+          about_features?: Json
+          about_title?: string
+          created_at?: string | null
+          footer_address?: string
+          footer_email?: string
+          footer_hours?: Json
+          footer_phone?: string
+          hero_badge_text?: string
+          hero_image_url?: string | null
+          hero_stats?: Json
+          hero_subtitle?: string
+          hero_title?: string
+          id?: string
+          quick_links?: Json
+          salon_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           created_at: string | null
