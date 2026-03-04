@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Save, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSalonSettings, useUpdateSalonSettings, SalonSettings } from "@/hooks/useSalonSettings";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Separator } from "@/components/ui/separator";
 
 export function SalonSettingsManager() {
   const { data: settings, isLoading } = useSalonSettings();
   const updateMutation = useUpdateSalonSettings();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [form, setForm] = useState<Partial<SalonSettings>>({});
 
@@ -26,9 +28,9 @@ export function SalonSettingsManager() {
     try {
       const { id, ...updates } = form as SalonSettings;
       await updateMutation.mutateAsync(updates);
-      toast({ title: "Settings saved", description: "Salon settings updated successfully." });
+      toast({ title: t("settingsManager.saved"), description: t("settingsManager.savedDesc") });
     } catch {
-      toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+      toast({ title: t("dashboard.error"), description: t("settingsManager.saveFailed"), variant: "destructive" });
     }
   };
 
@@ -103,18 +105,18 @@ export function SalonSettingsManager() {
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={updateMutation.isPending}>
           {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save All Changes
+          {t("settingsManager.saveAll")}
         </Button>
       </div>
 
       {/* General */}
       <Card variant="elevated">
         <CardHeader>
-          <CardTitle>General</CardTitle>
+          <CardTitle>{t("settingsManager.general")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Salon Name</Label>
+            <Label>{t("settingsManager.salonName")}</Label>
             <Input value={form.salon_name || ""} onChange={(e) => setForm({ ...form, salon_name: e.target.value })} />
           </div>
         </CardContent>
@@ -123,36 +125,36 @@ export function SalonSettingsManager() {
       {/* Hero Section */}
       <Card variant="elevated">
         <CardHeader>
-          <CardTitle>Hero Section</CardTitle>
+          <CardTitle>{t("settingsManager.heroSection")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Badge Text</Label>
+            <Label>{t("settingsManager.badgeText")}</Label>
             <Input value={form.hero_badge_text || ""} onChange={(e) => setForm({ ...form, hero_badge_text: e.target.value })} />
           </div>
           <div>
-            <Label>Title</Label>
+            <Label>{t("settingsManager.title")}</Label>
             <Input value={form.hero_title || ""} onChange={(e) => setForm({ ...form, hero_title: e.target.value })} />
           </div>
           <div>
-            <Label>Subtitle</Label>
+            <Label>{t("settingsManager.subtitle")}</Label>
             <Textarea value={form.hero_subtitle || ""} onChange={(e) => setForm({ ...form, hero_subtitle: e.target.value })} />
           </div>
           <div>
-            <Label>Hero Image URL (optional)</Label>
-            <Input value={form.hero_image_url || ""} onChange={(e) => setForm({ ...form, hero_image_url: e.target.value })} placeholder="Leave empty for default" />
+            <Label>{t("settingsManager.heroImageUrl")}</Label>
+            <Input value={form.hero_image_url || ""} onChange={(e) => setForm({ ...form, hero_image_url: e.target.value })} placeholder={t("settingsManager.leaveEmpty")} />
           </div>
 
           <Separator />
-          <Label className="text-base font-semibold">Stats</Label>
+          <Label className="text-base font-semibold">{t("settingsManager.stats")}</Label>
           {(form.hero_stats || []).map((stat, i) => (
             <div key={i} className="flex gap-2 items-end">
               <div className="flex-1">
-                <Label>Value</Label>
+                <Label>{t("settingsManager.value")}</Label>
                 <Input value={stat.value} onChange={(e) => updateStat(i, "value", e.target.value)} />
               </div>
               <div className="flex-1">
-                <Label>Label</Label>
+                <Label>{t("settingsManager.label")}</Label>
                 <Input value={stat.label} onChange={(e) => updateStat(i, "label", e.target.value)} />
               </div>
             </div>
@@ -163,20 +165,20 @@ export function SalonSettingsManager() {
       {/* About Section */}
       <Card variant="elevated">
         <CardHeader>
-          <CardTitle>About Section</CardTitle>
+          <CardTitle>{t("settingsManager.aboutSection")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Title</Label>
+            <Label>{t("settingsManager.title")}</Label>
             <Input value={form.about_title || ""} onChange={(e) => setForm({ ...form, about_title: e.target.value })} />
           </div>
           <div>
-            <Label>Description</Label>
+            <Label>{t("settingsManager.description")}</Label>
             <Textarea value={form.about_description || ""} onChange={(e) => setForm({ ...form, about_description: e.target.value })} />
           </div>
 
           <Separator />
-          <Label className="text-base font-semibold">Feature List</Label>
+          <Label className="text-base font-semibold">{t("settingsManager.featureList")}</Label>
           {(form.about_features || []).map((feature, i) => (
             <div key={i} className="flex gap-2 items-center">
               <Input value={feature} onChange={(e) => updateFeature(i, e.target.value)} className="flex-1" />
@@ -186,25 +188,25 @@ export function SalonSettingsManager() {
             </div>
           ))}
           <Button variant="outline" size="sm" onClick={addFeature}>
-            <Plus className="h-4 w-4" /> Add Feature
+            <Plus className="h-4 w-4" /> {t("settingsManager.addFeature")}
           </Button>
 
           <Separator />
-          <Label className="text-base font-semibold">Feature Cards</Label>
+          <Label className="text-base font-semibold">{t("settingsManager.featureCards")}</Label>
           {(form.about_cards || []).map((card, i) => (
             <div key={i} className="space-y-2 p-4 border rounded-lg">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label>Icon (Award, Users, Shield)</Label>
+                  <Label>{t("settingsManager.icon")}</Label>
                   <Input value={card.icon} onChange={(e) => updateAboutCard(i, "icon", e.target.value)} />
                 </div>
                 <div>
-                  <Label>Title</Label>
+                  <Label>{t("settingsManager.title")}</Label>
                   <Input value={card.title} onChange={(e) => updateAboutCard(i, "title", e.target.value)} />
                 </div>
               </div>
               <div>
-                <Label>Description</Label>
+                <Label>{t("settingsManager.description")}</Label>
                 <Textarea value={card.description} onChange={(e) => updateAboutCard(i, "description", e.target.value)} />
               </div>
             </div>
@@ -215,24 +217,24 @@ export function SalonSettingsManager() {
       {/* Footer */}
       <Card variant="elevated">
         <CardHeader>
-          <CardTitle>Footer / Contact</CardTitle>
+          <CardTitle>{t("settingsManager.footerContact")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Address</Label>
+            <Label>{t("settingsManager.address")}</Label>
             <Input value={form.footer_address || ""} onChange={(e) => setForm({ ...form, footer_address: e.target.value })} />
           </div>
           <div>
-            <Label>Phone</Label>
+            <Label>{t("settingsManager.phone")}</Label>
             <Input value={form.footer_phone || ""} onChange={(e) => setForm({ ...form, footer_phone: e.target.value })} />
           </div>
           <div>
-            <Label>Email</Label>
+            <Label>{t("settingsManager.emailLabel")}</Label>
             <Input value={form.footer_email || ""} onChange={(e) => setForm({ ...form, footer_email: e.target.value })} />
           </div>
 
           <Separator />
-          <Label className="text-base font-semibold">Working Hours</Label>
+          <Label className="text-base font-semibold">{t("settingsManager.workingHours")}</Label>
           {(form.footer_hours || []).map((hour, i) => (
             <div key={i} className="flex gap-2 items-center">
               <Input value={hour.label} onChange={(e) => updateHour(i, e.target.value)} className="flex-1" />
@@ -242,7 +244,7 @@ export function SalonSettingsManager() {
             </div>
           ))}
           <Button variant="outline" size="sm" onClick={addHour}>
-            <Plus className="h-4 w-4" /> Add Hours
+            <Plus className="h-4 w-4" /> {t("settingsManager.addHours")}
           </Button>
         </CardContent>
       </Card>
@@ -250,17 +252,17 @@ export function SalonSettingsManager() {
       {/* Quick Links */}
       <Card variant="elevated">
         <CardHeader>
-          <CardTitle>Quick Links</CardTitle>
+          <CardTitle>{t("settingsManager.quickLinks")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {(form.quick_links || []).map((link, i) => (
             <div key={i} className="flex gap-2 items-end">
               <div className="flex-1">
-                <Label>Label</Label>
+                <Label>{t("settingsManager.label")}</Label>
                 <Input value={link.label} onChange={(e) => updateQuickLink(i, "label", e.target.value)} />
               </div>
               <div className="flex-1">
-                <Label>Link</Label>
+                <Label>{t("settingsManager.link")}</Label>
                 <Input value={link.href} onChange={(e) => updateQuickLink(i, "href", e.target.value)} />
               </div>
               <Button variant="ghost" size="icon" onClick={() => removeQuickLink(i)}>
@@ -269,7 +271,7 @@ export function SalonSettingsManager() {
             </div>
           ))}
           <Button variant="outline" size="sm" onClick={addQuickLink}>
-            <Plus className="h-4 w-4" /> Add Link
+            <Plus className="h-4 w-4" /> {t("settingsManager.addLink")}
           </Button>
         </CardContent>
       </Card>
