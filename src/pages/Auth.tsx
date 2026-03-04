@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,6 @@ const signInSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-// Generate a unique device ID
 const getOrCreateDeviceId = (): string => {
   let deviceId = localStorage.getItem(DEVICE_ID_KEY);
   if (!deviceId) {
@@ -38,17 +38,14 @@ const getOrCreateDeviceId = (): string => {
   return deviceId;
 };
 
-// Check if device has already registered an account
 const hasDeviceRegistered = (): boolean => {
   return localStorage.getItem(REGISTERED_DEVICE_KEY) === "true";
 };
 
-// Mark device as having registered an account
 const markDeviceAsRegistered = () => {
   localStorage.setItem(REGISTERED_DEVICE_KEY, "true");
 };
 
-// Generate a random 4-digit PIN
 const generatePin = (): string => {
   return Math.floor(1000 + Math.random() * 9000).toString();
 };
@@ -74,8 +71,8 @@ export default function AuthPage() {
   const { signIn, signUp, user, isLoading: authLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
-  // Check device restriction on mount
   useEffect(() => {
     getOrCreateDeviceId();
     if (hasDeviceRegistered() && mode === "signup") {
@@ -101,7 +98,6 @@ export default function AuthPage() {
     if (profile?.is_verified) {
       navigate("/dashboard");
     } else {
-      // User exists but not verified - show PIN verification
       setPendingUserId(user.id);
       showPinVerification();
     }
@@ -113,9 +109,9 @@ export default function AuthPage() {
     setMode("verify");
     
     toast({
-      title: "🔐 Security PIN",
-      description: `Your verification code is: ${pin}`,
-      duration: 30000, // Show for 30 seconds
+      title: t("auth.securityPin"),
+      description: `${t("auth.verificationCode")} ${pin}`,
+      duration: 30000,
     });
   };
 
@@ -124,8 +120,8 @@ export default function AuthPage() {
 
     if (pinValue !== displayedPin) {
       toast({
-        title: "Invalid PIN",
-        description: "The PIN you entered doesn't match. Please try again.",
+        title: t("auth.invalidPin"),
+        description: t("auth.invalidPinDesc"),
         variant: "destructive",
       });
       return;
@@ -133,7 +129,6 @@ export default function AuthPage() {
 
     setIsLoading(true);
     try {
-      // Update profile to mark as verified
       const { error } = await supabase
         .from("profiles")
         .update({ is_verified: true })
@@ -141,18 +136,17 @@ export default function AuthPage() {
 
       if (error) throw error;
 
-      // Refresh the profile data in auth context
       await refreshProfile();
 
       toast({
-        title: "Verified!",
-        description: "Your account has been verified successfully.",
+        title: t("auth.verified"),
+        description: t("auth.verifiedDesc"),
       });
       navigate("/dashboard");
     } catch (error: any) {
       console.error("Error verifying:", error);
       toast({
-        title: "Verification failed",
+        title: t("auth.verificationFailed"),
         description: error.message || "Please try again.",
         variant: "destructive",
       });
@@ -167,8 +161,8 @@ export default function AuthPage() {
     setPinValue("");
     
     toast({
-      title: "🔐 New Security PIN",
-      description: `Your new verification code is: ${pin}`,
+      title: t("auth.newSecurityPin"),
+      description: `${t("auth.verificationCode")} ${pin}`,
       duration: 30000,
     });
   };
@@ -201,12 +195,11 @@ export default function AuthPage() {
     
     if (!validateForm()) return;
 
-    // Check device restriction for signup
     if (mode === "signup" && hasDeviceRegistered()) {
       setDeviceRestricted(true);
       toast({
-        title: "Device Limit Reached",
-        description: "Only one account can be created per device.",
+        title: t("auth.deviceLimit"),
+        description: t("auth.deviceLimitDesc"),
         variant: "destructive",
       });
       return;
@@ -226,22 +219,19 @@ export default function AuthPage() {
         if (error) {
           if (error.message.includes("already registered")) {
             toast({
-              title: "Account exists",
-              description: "This email is already registered. Please sign in instead.",
+              title: t("auth.accountExists"),
+              description: t("auth.accountExistsDesc"),
               variant: "destructive",
             });
           } else {
             toast({
-              title: "Sign up failed",
+              title: t("auth.signUpFailed"),
               description: error.message,
               variant: "destructive",
             });
           }
         } else if (data?.user) {
-          // Mark device as registered
           markDeviceAsRegistered();
-          
-          // Show PIN verification instead of email OTP
           setPendingUserId(data.user.id);
           showPinVerification();
         }
@@ -250,12 +240,11 @@ export default function AuthPage() {
 
         if (error) {
           toast({
-            title: "Sign in failed",
-            description: "Invalid email or password. Please try again.",
+            title: t("auth.signInFailed"),
+            description: t("auth.signInFailedDesc"),
             variant: "destructive",
           });
         } else if (data?.user) {
-          // Check if user is verified
           const { data: profile } = await supabase
             .from("profiles")
             .select("is_verified, full_name")
@@ -265,7 +254,6 @@ export default function AuthPage() {
           if (profile?.is_verified) {
             navigate("/dashboard");
           } else {
-            // User not verified, show PIN verification
             setPendingUserId(data.user.id);
             showPinVerification();
           }
@@ -297,25 +285,24 @@ export default function AuthPage() {
               <div className="mx-auto mb-4 p-3 rounded-xl bg-navy shadow-md">
                 <ShieldCheck className="h-8 w-8 text-white" />
               </div>
-              <CardTitle className="text-2xl">Security PIN Verification</CardTitle>
+              <CardTitle className="text-2xl">{t("auth.pinVerification")}</CardTitle>
               <CardDescription>
-                Enter the 4-digit code displayed on screen (testing mode)
+                {t("auth.pinDescription")}
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-6">
-              {/* Display the PIN prominently */}
               <Alert className="bg-primary/10 border-primary">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription className="text-center">
                   <span className="block text-sm text-muted-foreground mb-2">
-                    Your verification code is:
+                    {t("auth.verificationCode")}
                   </span>
                   <span className="block text-3xl font-bold tracking-[0.5em] text-primary">
                     {displayedPin}
                   </span>
                   <span className="block text-xs text-muted-foreground mt-2">
-                    (Testing mode - code displayed on screen)
+                    {t("auth.testingMode")}
                   </span>
                 </AlertDescription>
               </Alert>
@@ -345,16 +332,16 @@ export default function AuthPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Verifying...
+                    {t("auth.verifying")}
                   </>
                 ) : (
-                  "Verify PIN"
+                  t("auth.verifyPin")
                 )}
               </Button>
 
               <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Need a new code?
+                  {t("auth.needNewCode")}
                 </p>
                 <Button
                   variant="ghost"
@@ -362,7 +349,7 @@ export default function AuthPage() {
                   onClick={regeneratePin}
                   disabled={isLoading}
                 >
-                  Generate New PIN
+                  {t("auth.generateNew")}
                 </Button>
               </div>
             </CardContent>
@@ -374,44 +361,39 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
-      {/* Decorative Elements */}
       <div className="absolute top-20 left-10 w-32 h-32 bg-purple/10 rounded-full blur-3xl" />
       <div className="absolute bottom-20 right-10 w-40 h-40 bg-purple/10 rounded-full blur-3xl" />
 
       <div className="w-full max-w-md relative">
-        {/* Back Button */}
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to home
+          {t("auth.backHome")}
         </Link>
 
         <Card variant="elevated" className="border-0 shadow-lg">
           <CardHeader className="text-center pb-2">
-            {/* Logo */}
             <div className="mx-auto mb-4 p-3 rounded-xl bg-navy shadow-md">
               <Scissors className="h-8 w-8 text-white" />
             </div>
             <CardTitle className="text-2xl">
-              {mode === "signup" ? "Create an account" : "Welcome back"}
+              {mode === "signup" ? t("auth.createAccount") : t("auth.welcomeBack")}
             </CardTitle>
             <CardDescription>
               {mode === "signup"
-                ? "Start booking your appointments today"
-                : "Sign in to manage your bookings"}
+                ? t("auth.startBooking")
+                : t("auth.signInManage")}
             </CardDescription>
           </CardHeader>
 
           <CardContent>
-            {/* Device Restriction Warning */}
             {deviceRestricted && mode === "signup" && (
               <Alert variant="destructive" className="mb-4">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  This device has already been used to create an account. 
-                  Please sign in instead or use a different device.
+                  {t("auth.deviceWarning")}
                 </AlertDescription>
               </Alert>
             )}
@@ -420,7 +402,7 @@ export default function AuthPage() {
               {mode === "signup" && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
+                    <Label htmlFor="fullName">{t("auth.fullName")}</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -440,7 +422,7 @@ export default function AuthPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone">{t("auth.phoneNumber")}</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -463,7 +445,7 @@ export default function AuthPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("auth.email")}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -484,7 +466,7 @@ export default function AuthPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("auth.password")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -514,12 +496,12 @@ export default function AuthPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {mode === "signup" ? "Creating account..." : "Signing in..."}
+                    {mode === "signup" ? t("auth.creatingAccount") : t("auth.signingIn")}
                   </>
                 ) : mode === "signup" ? (
-                  "Create Account"
+                  t("auth.createAccountBtn")
                 ) : (
-                  "Sign In"
+                  t("auth.signInBtn")
                 )}
               </Button>
             </form>
@@ -528,7 +510,7 @@ export default function AuthPage() {
               <p className="text-sm text-muted-foreground">
                 {mode === "signup" ? (
                   <>
-                    Already have an account?{" "}
+                    {t("auth.alreadyAccount")}{" "}
                     <button
                       onClick={() => {
                         setMode("signin");
@@ -536,12 +518,12 @@ export default function AuthPage() {
                       }}
                       className="text-purple hover:text-purple-light font-medium transition-colors"
                     >
-                      Sign in
+                      {t("auth.signInLink")}
                     </button>
                   </>
                 ) : (
                   <>
-                    Don't have an account?{" "}
+                    {t("auth.noAccount")}{" "}
                     <button
                       onClick={() => {
                         setMode("signup");
@@ -551,7 +533,7 @@ export default function AuthPage() {
                       }}
                       className="text-purple hover:text-purple-light font-medium transition-colors"
                     >
-                      Sign up
+                      {t("auth.signUpLink")}
                     </button>
                   </>
                 )}
