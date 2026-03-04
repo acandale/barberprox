@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Calendar, Star, Clock, Loader2 } from "lucide-react";
 import heroImage from "@/assets/hero-barber.jpg";
 import { useSalonSettings } from "@/hooks/useSalonSettings";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export function HeroSection() {
   const navigate = useNavigate();
   const { data: settings, isLoading } = useSalonSettings();
+  const { t } = useLanguage();
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -39,7 +41,7 @@ export function HeroSection() {
           {/* Headline */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight animate-slide-up">
             {settings?.hero_title || "Stilul tău, la superlativ"}{" "}
-            <span className="text-gradient">Perfected</span>
+            <span className="text-gradient">{t("hero.perfected")}</span>
           </h1>
 
           {/* Subheadline */}
@@ -51,10 +53,10 @@ export function HeroSection() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
             <Button variant="hero" size="xl" onClick={() => navigate("/auth?mode=signup")} className="w-full sm:w-auto">
               <Calendar className="h-5 w-5" />
-              Book Appointment
+              {t("hero.bookAppointment")}
             </Button>
             <Button variant="hero-outline" size="xl" onClick={() => navigate("/#services")} className="w-full sm:w-auto">
-              View Services
+              {t("hero.viewServices")}
             </Button>
           </div>
 

@@ -4,11 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Scissors, Clock, DollarSign, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const ServiceIcon = () => <Scissors className="h-8 w-8" />;
 
 export function ServicesSection() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ["admin-services"],
@@ -27,12 +29,12 @@ export function ServicesSection() {
     <section id="services" className="py-24 bg-muted/30">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <span className="text-sm font-semibold text-purple uppercase tracking-wider">Our Services</span>
+          <span className="text-sm font-semibold text-purple uppercase tracking-wider">{t("services.label")}</span>
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 mb-4">
-            Premium Grooming Services
+            {t("services.title")}
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Choose from our range of professional services tailored to your needs
+            {t("services.subtitle")}
           </p>
         </div>
 
@@ -41,7 +43,7 @@ export function ServicesSection() {
             <Loader2 className="h-8 w-8 animate-spin text-purple" />
           </div>
         ) : services.length === 0 ? (
-          <p className="text-center text-muted-foreground">No services available yet.</p>
+          <p className="text-center text-muted-foreground">{t("services.noServices")}</p>
         ) : (
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {services.map((service, index) => (
@@ -67,11 +69,10 @@ export function ServicesSection() {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      <span>{service.duration_minutes} min</span>
+                      <span>{service.duration_minutes} {t("services.min")}</span>
                     </div>
                     <div className="flex items-center gap-2 font-bold text-2xl text-purple">
-                    <span>{Number(service.price)} RON</span>
-                  
+                      <span>{Number(service.price)} RON</span>
                     </div>
                   </div>
 
@@ -80,7 +81,7 @@ export function ServicesSection() {
                     className="w-full"
                     onClick={() => navigate("/book")}
                   >
-                    Book Now
+                    {t("services.bookNow")}
                   </Button>
                 </CardContent>
               </Card>
