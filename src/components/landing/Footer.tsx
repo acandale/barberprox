@@ -1,7 +1,25 @@
 import { Link } from "react-router-dom";
 import { Scissors, MapPin, Phone, Mail, Clock } from "lucide-react";
+import { useSalonSettings } from "@/hooks/useSalonSettings";
 
 export function Footer() {
+  const { data: settings } = useSalonSettings();
+
+  const salonName = settings?.salon_name || "BarberPro";
+  const quickLinks = settings?.quick_links || [
+    { label: "Services", href: "/#services" },
+    { label: "About Us", href: "/#about" },
+    { label: "Book Now", href: "/auth" },
+  ];
+  const address = settings?.footer_address || "123 Style Street, City";
+  const phone = settings?.footer_phone || "(555) 123-4567";
+  const email = settings?.footer_email || "hello@barberpro.com";
+  const hours = settings?.footer_hours || [
+    { label: "Mon - Fri: 9AM - 6PM" },
+    { label: "Saturday: 9AM - 5PM" },
+    { label: "Sunday: Closed" },
+  ];
+
   return (
     <footer className="bg-navy text-white">
       <div className="container mx-auto px-4 py-16">
@@ -12,7 +30,7 @@ export function Footer() {
               <div className="p-2 rounded-lg bg-purple">
                 <Scissors className="h-5 w-5 text-white" />
               </div>
-              <span className="font-bold text-xl">BarberPro</span>
+              <span className="font-bold text-xl">{salonName}</span>
             </Link>
             <p className="text-white/60 text-sm leading-relaxed">
               Premium grooming services for the modern gentleman. Book your appointment today.
@@ -23,21 +41,13 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-3">
-              <li>
-                <Link to="/#services" className="text-white/60 hover:text-white text-sm transition-colors">
-                  Services
-                </Link>
-              </li>
-              <li>
-                <Link to="/#about" className="text-white/60 hover:text-white text-sm transition-colors">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link to="/auth" className="text-white/60 hover:text-white text-sm transition-colors">
-                  Book Now
-                </Link>
-              </li>
+              {quickLinks.map((link, i) => (
+                <li key={i}>
+                  <Link to={link.href} className="text-white/60 hover:text-white text-sm transition-colors">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -47,15 +57,15 @@ export function Footer() {
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-white/60 text-sm">
                 <MapPin className="h-4 w-4 text-purple" />
-                <span>123 Style Street, City</span>
+                <span>{address}</span>
               </li>
               <li className="flex items-center gap-3 text-white/60 text-sm">
                 <Phone className="h-4 w-4 text-purple" />
-                <span>(555) 123-4567</span>
+                <span>{phone}</span>
               </li>
               <li className="flex items-center gap-3 text-white/60 text-sm">
                 <Mail className="h-4 w-4 text-purple" />
-                <span>hello@barberpro.com</span>
+                <span>{email}</span>
               </li>
             </ul>
           </div>
@@ -64,18 +74,12 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Working Hours</h4>
             <ul className="space-y-3">
-              <li className="flex items-center gap-3 text-white/60 text-sm">
-                <Clock className="h-4 w-4 text-purple" />
-                <span>Mon - Fri: 9AM - 6PM</span>
-              </li>
-              <li className="flex items-center gap-3 text-white/60 text-sm">
-                <Clock className="h-4 w-4 text-purple" />
-                <span>Saturday: 9AM - 5PM</span>
-              </li>
-              <li className="flex items-center gap-3 text-white/60 text-sm">
-                <Clock className="h-4 w-4 text-purple" />
-                <span>Sunday: Closed</span>
-              </li>
+              {hours.map((h, i) => (
+                <li key={i} className="flex items-center gap-3 text-white/60 text-sm">
+                  <Clock className="h-4 w-4 text-purple" />
+                  <span>{h.label}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -83,7 +87,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-white/10 mt-12 pt-8 text-center">
           <p className="text-white/40 text-sm">
-            © {new Date().getFullYear()} BarberPro. All rights reserved.
+            © {new Date().getFullYear()} {salonName}. All rights reserved.
           </p>
         </div>
       </div>
