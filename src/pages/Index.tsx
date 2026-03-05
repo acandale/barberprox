@@ -19,7 +19,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
-      <Navbar variant="transparent" />
+      <Navbar />
       <HeroSection />
       <ServicesSection />
       <AboutSection />
