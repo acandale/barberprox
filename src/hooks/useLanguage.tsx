@@ -135,6 +135,7 @@ const translations: Record<Language, Record<string, string>> = {
     "booking.confirmed": "Booking confirmed!",
     "booking.failed": "Booking failed",
     "booking.failedDesc": "Something went wrong. Please try again.",
+    "booking.slotTaken": "This time slot was just booked by someone else. Please choose another.",
 
     // Admin
     "admin.dashboard": "Admin Dashboard",
@@ -448,6 +449,7 @@ const translations: Record<Language, Record<string, string>> = {
     "booking.confirmed": "Programare confirmată!",
     "booking.failed": "Programarea a eșuat",
     "booking.failedDesc": "Ceva nu a funcționat. Te rugăm să încerci din nou.",
+    "booking.slotTaken": "Acest interval a fost tocmai rezervat de altcineva. Te rugăm să alegi altul.",
 
     // Admin
     "admin.dashboard": "Panou de administrare",
