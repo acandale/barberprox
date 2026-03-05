@@ -229,12 +229,16 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
       // Reset form for next booking
       setSelectedTime(null);
     },
-    onError: () => {
+    onError: (error: any) => {
+      const isOverlap = error?.message?.includes("overlap");
       toast({
         title: "Booking failed",
-        description: "Something went wrong. Please try again.",
+        description: isOverlap ? "This time slot is already booked. Please choose another." : "Something went wrong. Please try again.",
         variant: "destructive",
       });
+      if (isOverlap) {
+        queryClient.invalidateQueries({ queryKey: ["appointments-for-date"] });
+      }
     },
   });
 

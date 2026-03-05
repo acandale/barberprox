@@ -163,8 +163,16 @@ export default function BookingPage() {
       if (error) throw error;
       toast({ title: t("booking.confirmed"), description: `${selectedService.name} - ${format(startTime, "MMMM d 'at' h:mm a")}` });
       navigate("/dashboard");
-    } catch (error) {
-      toast({ title: t("booking.failed"), description: t("booking.failedDesc"), variant: "destructive" });
+    } catch (error: any) {
+      const isOverlap = error?.message?.includes("overlap");
+      toast({ 
+        title: t("booking.failed"), 
+        description: isOverlap ? t("booking.slotTaken") : t("booking.failedDesc"), 
+        variant: "destructive" 
+      });
+      if (isOverlap) {
+        queryClient.invalidateQueries({ queryKey: ["appointments-for-date"] });
+      }
     } finally {
       setIsBooking(false);
     }
