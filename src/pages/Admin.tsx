@@ -278,12 +278,24 @@ export default function AdminPage() {
   };
 
   const SLOT_HEIGHT = 40;
-  const DAY_START_HOUR = 8;
 
   const renderDayView = () => {
     const dayAppointments = getAppointmentsForDay(currentDate);
+
+    // Determine day range from work hours, with fallback 8-20
+    const dayOfWeek = currentDate.getDay();
+    const todayWorkHour = workHours.find((wh: any) => wh.day_of_week === dayOfWeek);
+    let dayStartHour = 8;
+    let dayEndHour = 20;
+    if (todayWorkHour && todayWorkHour.is_working_day) {
+      const [sh] = todayWorkHour.start_time.split(":").map(Number);
+      const [eh, em] = todayWorkHour.end_time.split(":").map(Number);
+      dayStartHour = sh;
+      dayEndHour = em > 0 ? eh + 1 : eh;
+    }
+
     const slots: { hour: number; minute: number }[] = [];
-    for (let h = 8; h < 20; h++) {
+    for (let h = dayStartHour; h < dayEndHour; h++) {
       for (let m = 0; m < 60; m += 15) {
         slots.push({ hour: h, minute: m });
       }
