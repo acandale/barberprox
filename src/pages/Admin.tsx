@@ -97,6 +97,20 @@ export default function AdminPage() {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
+  // Fetch work hours for dynamic calendar range
+  const { data: workHours = [] } = useQuery({
+    queryKey: ["admin-work-hours-range"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("work_hours")
+        .select("*")
+        .order("day_of_week", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && isAdmin,
+  });
+
   // Fetch blocked times for day view
   const { data: dayBlockedTimes = [] } = useQuery({
     queryKey: ["admin-day-blocked-times", currentDate.toISOString(), viewMode],
