@@ -316,7 +316,7 @@ export default function AdminPage() {
     }
 
     const getSlotIndex = (hour: number, minute: number) =>
-      (hour - DAY_START_HOUR) * 4 + minute / 15;
+      (hour - dayStartHour) * 4 + minute / 15;
 
     const isSlotBlocked = (hour: number, minute: number) => {
       const slotTime = new Date(currentDate);
