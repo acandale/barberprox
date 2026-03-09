@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addMinutes, parseISO, setHours, setMinutes } from "date-fns";
@@ -17,9 +17,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronsUpDown, Check } from "lucide-react";
 
 interface AdminBookAppointmentProps {
   open: boolean;
@@ -34,6 +47,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [clientSearchOpen, setClientSearchOpen] = useState(false);
 
   // Fetch clients
   const { data: clients = [] } = useQuery({
@@ -247,6 +261,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     setSelectedServiceId("");
     setSelectedDate(undefined);
     setSelectedTime(null);
+    setClientSearchOpen(false);
     onOpenChange(false);
   };
 
@@ -258,21 +273,58 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
-          {/* Client */}
+          {/* Client - searchable */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Client</label>
-            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a client" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.full_name} — {c.phone || c.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={clientSearchOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  {selectedClientId
+                    ? (() => {
+                        const c = clients.find((c) => c.id === selectedClientId);
+                        return c ? `${c.full_name} — ${c.phone || c.email}` : "Selectează client";
+                      })()
+                    : "Caută după nume sau telefon..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Caută client..." />
+                  <CommandList>
+                    <CommandEmpty>Niciun client găsit.</CommandEmpty>
+                    <CommandGroup>
+                      {clients.map((c) => (
+                        <CommandItem
+                          key={c.id}
+                          value={`${c.full_name} ${c.phone} ${c.email}`}
+                          onSelect={() => {
+                            setSelectedClientId(c.id);
+                            setClientSearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedClientId === c.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <div className="flex flex-col">
+                            <span>{c.full_name}</span>
+                            <span className="text-xs text-muted-foreground">{c.phone || c.email}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Service */}
@@ -291,7 +343,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
               <SelectContent>
                 {services.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.name} — {s.duration_minutes}min — ${Number(s.price)}
+                    {s.name} — {s.duration_minutes}min — {Number(s.price)} RON
                   </SelectItem>
                 ))}
               </SelectContent>
