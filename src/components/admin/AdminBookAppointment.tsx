@@ -272,21 +272,58 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
-          {/* Client */}
+          {/* Client - searchable */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Client</label>
-            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a client" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.full_name} — {c.phone || c.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={clientSearchOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  {selectedClientId
+                    ? (() => {
+                        const c = clients.find((c) => c.id === selectedClientId);
+                        return c ? `${c.full_name} — ${c.phone || c.email}` : "Selectează client";
+                      })()
+                    : "Caută după nume sau telefon..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Caută client..." />
+                  <CommandList>
+                    <CommandEmpty>Niciun client găsit.</CommandEmpty>
+                    <CommandGroup>
+                      {clients.map((c) => (
+                        <CommandItem
+                          key={c.id}
+                          value={`${c.full_name} ${c.phone} ${c.email}`}
+                          onSelect={() => {
+                            setSelectedClientId(c.id);
+                            setClientSearchOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedClientId === c.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <div className="flex flex-col">
+                            <span>{c.full_name}</span>
+                            <span className="text-xs text-muted-foreground">{c.phone || c.email}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Service */}
