@@ -342,7 +342,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
               <SelectContent>
                 {services.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.name} — {s.duration_minutes}min — ${Number(s.price)}
+                    {s.name} — {s.duration_minutes}min — {Number(s.price)} RON
                   </SelectItem>
                 ))}
               </SelectContent>
