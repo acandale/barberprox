@@ -261,6 +261,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     setSelectedServiceId("");
     setSelectedDate(undefined);
     setSelectedTime(null);
+    setClientSearchOpen(false);
     onOpenChange(false);
   };
 
