@@ -136,6 +136,9 @@ const translations: Record<Language, Record<string, string>> = {
     "booking.failed": "Booking failed",
     "booking.failedDesc": "Something went wrong. Please try again.",
     "booking.slotTaken": "This time slot was just booked by someone else. Please choose another.",
+    "booking.specialist": "Specialist",
+    "booking.selectSpecialist": "Choose a Specialist",
+    "booking.selectSpecialistDesc": "Choose your preferred specialist",
 
     // Admin
     "admin.dashboard": "Admin Dashboard",
@@ -450,6 +453,9 @@ const translations: Record<Language, Record<string, string>> = {
     "booking.failed": "Programarea a eșuat",
     "booking.failedDesc": "Ceva nu a funcționat. Te rugăm să încerci din nou.",
     "booking.slotTaken": "Acest interval a fost tocmai rezervat de altcineva. Te rugăm să alegi altul.",
+    "booking.specialist": "Specialist",
+    "booking.selectSpecialist": "Alege specialistul",
+    "booking.selectSpecialistDesc": "Alege specialistul preferat",
 
     // Admin
     "admin.dashboard": "Panou de administrare",
