@@ -209,7 +209,7 @@ export default function Dashboard() {
                         <Clock className="h-4 w-4" />
                         {nextAppointment.services.duration_minutes} min
                       </span>
-                      <span>${Number(nextAppointment.services.price)}</span>
+                      <span>{Number(nextAppointment.services.price)} RON</span>
                     </div>
                   </div>
 

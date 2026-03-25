@@ -47,6 +47,7 @@ import { ServicesManager } from "@/components/admin/ServicesManager";
 import { VacationsManager } from "@/components/admin/VacationsManager";
 import { AdminBookAppointment } from "@/components/admin/AdminBookAppointment";
 import { SalonSettingsManager } from "@/components/admin/SalonSettingsManager";
+import { SpecialistsManager } from "@/components/admin/SpecialistsManager";
 
 interface ProfileInfo {
   full_name: string;
@@ -61,6 +62,7 @@ interface AppointmentWithDetails {
   status: string;
   notes: string | null;
   user_id: string;
+  specialist_id: string | null;
   profiles: ProfileInfo | null;
   services: {
     name: string;
@@ -76,7 +78,7 @@ const SERVICE_COLORS: Record<string, string> = {
 };
 
 type ViewMode = "month" | "week" | "day";
-type AdminTab = "appointments" | "work-hours" | "blocked-times" | "services" | "vacations" | "settings";
+type AdminTab = "appointments" | "work-hours" | "blocked-times" | "services" | "vacations" | "settings" | "specialists";
 
 export default function AdminPage() {
   const { user, isAdmin, isLoading: authLoading } = useAuth();
@@ -162,6 +164,7 @@ export default function AdminPage() {
           status,
           notes,
           user_id,
+          specialist_id,
           services (
             name,
             duration_minutes,
@@ -453,6 +456,10 @@ export default function AdminPage() {
               <Calendar className="h-4 w-4" />
               {t("admin.appointments")}
             </TabsTrigger>
+            <TabsTrigger value="specialists" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Specialiști
+            </TabsTrigger>
             <TabsTrigger value="services" className="flex items-center gap-2">
               <Scissors className="h-4 w-4" />
               {t("admin.services")}
@@ -566,6 +573,11 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
+          {/* Specialists Tab */}
+          <TabsContent value="specialists">
+            <SpecialistsManager />
+          </TabsContent>
+
           {/* Services Tab */}
           <TabsContent value="services">
             <ServicesManager />
@@ -622,8 +634,7 @@ export default function AdminPage() {
                   <div>
                     <p className="font-semibold">{selectedAppointment.services.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {selectedAppointment.services.duration_minutes} {t("admin.minutes")} • $
-                      {Number(selectedAppointment.services.price)}
+                      {selectedAppointment.services.duration_minutes} {t("admin.minutes")} • {Number(selectedAppointment.services.price)} RON
                     </p>
                   </div>
                 </div>

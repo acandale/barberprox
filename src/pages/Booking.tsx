@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addMinutes, parseISO, isSameDay, isWithinInterval, setHours, setMinutes } from "date-fns";
-import { Scissors, Clock, DollarSign, ArrowLeft, ArrowRight, Loader2, Check } from "lucide-react";
+import { format, addMinutes, parseISO, setHours, setMinutes } from "date-fns";
+import { Scissors, Clock, ArrowLeft, ArrowRight, Loader2, Check, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,13 @@ interface Service {
   duration_minutes: number;
   price: number;
   description: string;
+}
+
+interface Specialist {
+  id: string;
+  name: string;
+  title: string;
+  is_active: boolean;
 }
 
 interface WorkHour {
@@ -34,17 +41,17 @@ export default function BookingPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
 
+  // Steps: 1=service, 2=specialist, 3=date/time, 4=confirm
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedSpecialist, setSelectedSpecialist] = useState<Specialist | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isBooking, setIsBooking] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
+    if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
@@ -66,26 +73,53 @@ export default function BookingPage() {
     },
   });
 
-  const { data: workHours = [] } = useQuery({
-    queryKey: ["work-hours"],
+  // Fetch active specialists that offer the selected service
+  const { data: specialists = [] } = useQuery({
+    queryKey: ["booking-specialists", selectedService?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("work_hours").select("*");
+      if (!selectedService) return [];
+      const { data, error } = await supabase
+        .from("specialist_services")
+        .select("specialist_id, specialists(id, name, title, is_active)")
+        .eq("service_id", selectedService.id);
+      if (error) throw error;
+      return (data || [])
+        .map((row: any) => row.specialists as Specialist)
+        .filter((s: Specialist) => s && s.is_active);
+    },
+    enabled: !!selectedService,
+  });
+
+  // Fetch specialist-specific work hours
+  const { data: specialistWorkHours = [] } = useQuery({
+    queryKey: ["specialist-work-hours-booking", selectedSpecialist?.id],
+    queryFn: async () => {
+      if (!selectedSpecialist) return [];
+      const { data, error } = await supabase
+        .from("specialist_work_hours")
+        .select("*")
+        .eq("specialist_id", selectedSpecialist.id);
       if (error) throw error;
       return data as WorkHour[];
     },
+    enabled: !!selectedSpecialist,
   });
 
   const { data: existingAppointments = [] } = useQuery({
-    queryKey: ["appointments-for-date", selectedDate?.toISOString()],
+    queryKey: ["appointments-for-date", selectedDate?.toISOString(), selectedSpecialist?.id],
     queryFn: async () => {
       if (!selectedDate) return [];
       const startOfDay = new Date(selectedDate); startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(selectedDate); endOfDay.setHours(23, 59, 59, 999);
-      const { data, error } = await supabase.from("appointments").select("start_time, end_time").gte("start_time", startOfDay.toISOString()).lte("start_time", endOfDay.toISOString()).neq("status", "cancelled");
+      let query = supabase.from("appointments").select("start_time, end_time").gte("start_time", startOfDay.toISOString()).lte("start_time", endOfDay.toISOString()).neq("status", "cancelled");
+      if (selectedSpecialist) {
+        query = query.eq("specialist_id", selectedSpecialist.id);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedDate,
+    enabled: !!selectedDate && !!selectedSpecialist,
   });
 
   const { data: blockedTimes = [] } = useQuery({
@@ -111,9 +145,9 @@ export default function BookingPage() {
   });
 
   const generateTimeSlots = () => {
-    if (!selectedDate || !selectedService) return [];
+    if (!selectedDate || !selectedService || !selectedSpecialist) return [];
     const dayOfWeek = selectedDate.getDay();
-    const workHour = workHours.find((wh) => wh.day_of_week === dayOfWeek);
+    const workHour = specialistWorkHours.find((wh) => wh.day_of_week === dayOfWeek);
     if (!workHour || !workHour.is_working_day) return [];
     const slots: string[] = [];
     const [startHour, startMin] = workHour.start_time.split(":").map(Number);
@@ -142,37 +176,41 @@ export default function BookingPage() {
   const timeSlots = generateTimeSlots();
 
   const isDateDisabled = (date: Date) => {
+    if (!selectedSpecialist) return true;
     const dayOfWeek = date.getDay();
-    const workHour = workHours.find((wh) => wh.day_of_week === dayOfWeek);
+    const workHour = specialistWorkHours.find((wh) => wh.day_of_week === dayOfWeek);
     if (!workHour || !workHour.is_working_day) return true;
     if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true;
     const dateStr = format(date, "yyyy-MM-dd");
-    const isBlockedDay = blockedDays.some((bd) => dateStr >= bd.start_date && dateStr <= bd.end_date);
-    if (isBlockedDay) return true;
-    return false;
+    return blockedDays.some((bd) => dateStr >= bd.start_date && dateStr <= bd.end_date);
   };
 
   const handleBooking = async () => {
-    if (!selectedService || !selectedDate || !selectedTime || !user) return;
+    if (!selectedService || !selectedDate || !selectedTime || !user || !selectedSpecialist) return;
     setIsBooking(true);
     try {
       const [hours, minutes] = selectedTime.split(":").map(Number);
       const startTime = new Date(selectedDate); startTime.setHours(hours, minutes, 0, 0);
       const endTime = addMinutes(startTime, selectedService.duration_minutes);
-      const { error } = await supabase.from("appointments").insert({ user_id: user.id, service_id: selectedService.id, start_time: startTime.toISOString(), end_time: endTime.toISOString(), status: "confirmed" });
+      const { error } = await supabase.from("appointments").insert({
+        user_id: user.id,
+        service_id: selectedService.id,
+        specialist_id: selectedSpecialist.id,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        status: "confirmed",
+      });
       if (error) throw error;
-      toast({ title: t("booking.confirmed"), description: `${selectedService.name} - ${format(startTime, "MMMM d 'at' h:mm a")}` });
+      toast({ title: t("booking.confirmed"), description: `${selectedService.name} - ${selectedSpecialist.name} - ${format(startTime, "MMMM d 'at' h:mm a")}` });
       navigate("/dashboard");
     } catch (error: any) {
       const isOverlap = error?.message?.includes("overlap");
-      toast({ 
-        title: t("booking.failed"), 
-        description: isOverlap ? t("booking.slotTaken") : t("booking.failedDesc"), 
-        variant: "destructive" 
+      toast({
+        title: t("booking.failed"),
+        description: isOverlap ? t("booking.slotTaken") : t("booking.failedDesc"),
+        variant: "destructive",
       });
-      if (isOverlap) {
-        queryClient.invalidateQueries({ queryKey: ["appointments-for-date"] });
-      }
+      if (isOverlap) queryClient.invalidateQueries({ queryKey: ["appointments-for-date"] });
     } finally {
       setIsBooking(false);
     }
@@ -186,6 +224,9 @@ export default function BookingPage() {
     );
   }
 
+  const totalSteps = 4;
+  const stepLabels = [t("booking.service"), t("booking.specialist") || "Specialist", t("booking.dateTime"), t("booking.confirm")];
+
   return (
     <div className="min-h-screen bg-muted/30">
       <Navbar />
@@ -193,17 +234,20 @@ export default function BookingPage() {
       <main className="container mx-auto px-4 pt-24 pb-12">
         {/* Progress Steps */}
         <div className="flex items-center justify-center gap-4 mb-8">
-          {[1, 2, 3].map((s) => (
-            <div key={s} className="flex items-center gap-2">
-              <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all", step >= s ? "bg-purple text-white" : "bg-muted text-muted-foreground")}>
-                {step > s ? <Check className="h-4 w-4" /> : s}
+          {stepLabels.map((label, i) => {
+            const s = i + 1;
+            return (
+              <div key={s} className="flex items-center gap-2">
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all", step >= s ? "bg-purple text-white" : "bg-muted text-muted-foreground")}>
+                  {step > s ? <Check className="h-4 w-4" /> : s}
+                </div>
+                <span className={cn("text-sm hidden sm:block", step >= s ? "text-foreground" : "text-muted-foreground")}>
+                  {label}
+                </span>
+                {s < totalSteps && <div className={cn("w-12 h-0.5 mx-2", step > s ? "bg-purple" : "bg-muted")} />}
               </div>
-              <span className={cn("text-sm hidden sm:block", step >= s ? "text-foreground" : "text-muted-foreground")}>
-                {s === 1 ? t("booking.service") : s === 2 ? t("booking.dateTime") : t("booking.confirm")}
-              </span>
-              {s < 3 && <div className={cn("w-12 h-0.5 mx-2", step > s ? "bg-purple" : "bg-muted")} />}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Step 1: Select Service */}
@@ -215,7 +259,7 @@ export default function BookingPage() {
             </div>
             <div className="grid gap-4">
               {services.map((service) => (
-                <Card key={service.id} variant={selectedService?.id === service.id ? "elevated" : "default"} className={cn("cursor-pointer transition-all", selectedService?.id === service.id && "ring-2 ring-purple")} onClick={() => setSelectedService(service)}>
+                <Card key={service.id} variant={selectedService?.id === service.id ? "elevated" : "default"} className={cn("cursor-pointer transition-all", selectedService?.id === service.id && "ring-2 ring-purple")} onClick={() => { setSelectedService(service); setSelectedSpecialist(null); setSelectedDate(undefined); setSelectedTime(null); }}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -226,7 +270,7 @@ export default function BookingPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-purple">${Number(service.price)}</p>
+                        <p className="text-2xl font-bold text-purple">{Number(service.price)} RON</p>
                         <p className="text-sm text-muted-foreground flex items-center gap-1"><Clock className="h-4 w-4" />{service.duration_minutes} {t("services.min")}</p>
                       </div>
                     </div>
@@ -241,8 +285,55 @@ export default function BookingPage() {
           </div>
         )}
 
-        {/* Step 2: Select Date & Time */}
+        {/* Step 2: Select Specialist */}
         {step === 2 && (
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold text-foreground">{t("booking.selectSpecialist") || "Alege specialistul"}</h1>
+              <p className="text-muted-foreground">{t("booking.selectSpecialistDesc") || "Alege specialistul preferat"}</p>
+            </div>
+            {specialists.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Niciun specialist disponibil pentru acest serviciu.</p>
+            ) : (
+              <div className="grid gap-4">
+                {specialists.map((specialist) => (
+                  <Card
+                    key={specialist.id}
+                    variant={selectedSpecialist?.id === specialist.id ? "elevated" : "default"}
+                    className={cn("cursor-pointer transition-all", selectedSpecialist?.id === specialist.id && "ring-2 ring-purple")}
+                    onClick={() => { setSelectedSpecialist(specialist); setSelectedDate(undefined); setSelectedTime(null); }}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full bg-purple/10 flex items-center justify-center text-purple font-bold text-lg">
+                            {specialist.name.charAt(0)}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg">{specialist.name}</h3>
+                            <p className="text-sm text-muted-foreground">{specialist.title || "Specialist"}</p>
+                          </div>
+                        </div>
+                        {selectedSpecialist?.id === specialist.id && (
+                          <div className="w-8 h-8 rounded-full bg-purple flex items-center justify-center">
+                            <Check className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-between mt-8">
+              <Button variant="ghost" onClick={() => setStep(1)}><ArrowLeft className="h-4 w-4" />{t("booking.back")}</Button>
+              <Button variant="hero" disabled={!selectedSpecialist} onClick={() => setStep(3)}>{t("booking.continue")}<ArrowRight className="h-4 w-4" /></Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Select Date & Time */}
+        {step === 3 && (
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-foreground">{t("booking.selectDateTime")}</h1>
@@ -280,14 +371,14 @@ export default function BookingPage() {
               </Card>
             </div>
             <div className="flex justify-between mt-8">
-              <Button variant="ghost" onClick={() => setStep(1)}><ArrowLeft className="h-4 w-4" />{t("booking.back")}</Button>
-              <Button variant="hero" disabled={!selectedDate || !selectedTime} onClick={() => setStep(3)}>{t("booking.continue")}<ArrowRight className="h-4 w-4" /></Button>
+              <Button variant="ghost" onClick={() => setStep(2)}><ArrowLeft className="h-4 w-4" />{t("booking.back")}</Button>
+              <Button variant="hero" disabled={!selectedDate || !selectedTime} onClick={() => setStep(4)}>{t("booking.continue")}<ArrowRight className="h-4 w-4" /></Button>
             </div>
           </div>
         )}
 
-        {/* Step 3: Confirm */}
-        {step === 3 && selectedService && selectedDate && selectedTime && (
+        {/* Step 4: Confirm */}
+        {step === 4 && selectedService && selectedSpecialist && selectedDate && selectedTime && (
           <div className="max-w-lg mx-auto">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-foreground">{t("booking.confirmBooking")}</h1>
@@ -302,6 +393,15 @@ export default function BookingPage() {
                       <div>
                         <p className="font-bold text-xl">{selectedService.name}</p>
                         <p className="text-white/70">{selectedService.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mb-4 pt-3 border-t border-white/20">
+                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-purple-light font-bold">
+                        {selectedSpecialist.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-semibold">{selectedSpecialist.name}</p>
+                        <p className="text-white/60 text-sm">{selectedSpecialist.title || "Specialist"}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/20">
@@ -319,7 +419,7 @@ export default function BookingPage() {
                       </div>
                       <div>
                         <p className="text-white/60 text-sm">{t("booking.price")}</p>
-                        <p className="font-semibold text-purple-light text-xl">${Number(selectedService.price)}</p>
+                        <p className="font-semibold text-purple-light text-xl">{Number(selectedService.price)} RON</p>
                       </div>
                     </div>
                   </div>
@@ -330,7 +430,7 @@ export default function BookingPage() {
               </CardContent>
             </Card>
             <div className="flex justify-center mt-6">
-              <Button variant="ghost" onClick={() => setStep(2)}><ArrowLeft className="h-4 w-4" />{t("booking.back")}</Button>
+              <Button variant="ghost" onClick={() => setStep(3)}><ArrowLeft className="h-4 w-4" />{t("booking.back")}</Button>
             </div>
           </div>
         )}

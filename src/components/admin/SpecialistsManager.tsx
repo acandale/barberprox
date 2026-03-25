@@ -1,0 +1,508 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, Plus, Pencil, Trash2, Save, Clock, Scissors } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+interface Specialist {
+  id: string;
+  name: string;
+  title: string;
+  is_active: boolean;
+}
+
+interface SpecialistWorkHour {
+  id: string;
+  specialist_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  is_working_day: boolean;
+}
+
+const DAYS_OF_WEEK = [
+  "Duminică", "Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă",
+];
+
+export function SpecialistsManager() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingSpecialist, setEditingSpecialist] = useState<Specialist | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formTitle, setFormTitle] = useState("");
+  const [formActive, setFormActive] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedSpecialistId, setSelectedSpecialistId] = useState<string | null>(null);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [editedWorkHours, setEditedWorkHours] = useState<Record<number, Partial<SpecialistWorkHour>>>({});
+
+  // Fetch specialists
+  const { data: specialists = [], isLoading } = useQuery({
+    queryKey: ["admin-specialists"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("specialists")
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      return data as Specialist[];
+    },
+  });
+
+  // Fetch all services
+  const { data: services = [] } = useQuery({
+    queryKey: ["admin-services"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("services").select("*").order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch specialist_services for the selected specialist
+  const { data: specialistServices = [] } = useQuery({
+    queryKey: ["specialist-services", selectedSpecialistId],
+    queryFn: async () => {
+      if (!selectedSpecialistId) return [];
+      const { data, error } = await supabase
+        .from("specialist_services")
+        .select("service_id")
+        .eq("specialist_id", selectedSpecialistId);
+      if (error) throw error;
+      return data.map((s: any) => s.service_id as string);
+    },
+    enabled: !!selectedSpecialistId,
+  });
+
+  // Fetch specialist work hours
+  const { data: specialistWorkHours = [] } = useQuery({
+    queryKey: ["specialist-work-hours", selectedSpecialistId],
+    queryFn: async () => {
+      if (!selectedSpecialistId) return [];
+      const { data, error } = await supabase
+        .from("specialist_work_hours")
+        .select("*")
+        .eq("specialist_id", selectedSpecialistId)
+        .order("day_of_week");
+      if (error) throw error;
+      return data as SpecialistWorkHour[];
+    },
+    enabled: !!selectedSpecialistId,
+  });
+
+  useEffect(() => {
+    setSelectedServices(specialistServices);
+  }, [specialistServices]);
+
+  useEffect(() => {
+    setEditedWorkHours({});
+  }, [selectedSpecialistId]);
+
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const { data: specialist, error } = await supabase
+        .from("specialists")
+        .insert({ name: formName, title: formTitle, is_active: formActive })
+        .select()
+        .single();
+      if (error) throw error;
+
+      // Initialize work hours for all 7 days
+      const workHoursRows = Array.from({ length: 7 }, (_, i) => ({
+        specialist_id: specialist.id,
+        day_of_week: i,
+        start_time: "09:00",
+        end_time: "18:00",
+        is_working_day: i >= 1 && i <= 5, // Mon-Fri by default
+      }));
+      const { error: whError } = await supabase.from("specialist_work_hours").insert(workHoursRows);
+      if (whError) throw whError;
+    },
+    onSuccess: () => {
+      toast({ title: "Specialist adăugat cu succes" });
+      queryClient.invalidateQueries({ queryKey: ["admin-specialists"] });
+      closeDialog();
+    },
+    onError: () => toast({ title: "Eroare la adăugarea specialistului", variant: "destructive" }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingSpecialist) return;
+      const { error } = await supabase
+        .from("specialists")
+        .update({ name: formName, title: formTitle, is_active: formActive })
+        .eq("id", editingSpecialist.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Specialist actualizat" });
+      queryClient.invalidateQueries({ queryKey: ["admin-specialists"] });
+      closeDialog();
+    },
+    onError: () => toast({ title: "Eroare la actualizare", variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("specialists").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Specialist șters" });
+      if (selectedSpecialistId === deleteId) setSelectedSpecialistId(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-specialists"] });
+      setDeleteId(null);
+    },
+    onError: () => toast({ title: "Ștergerea a eșuat", variant: "destructive" }),
+  });
+
+  const saveServicesMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSpecialistId) return;
+      // Delete existing and re-insert
+      await supabase.from("specialist_services").delete().eq("specialist_id", selectedSpecialistId);
+      if (selectedServices.length > 0) {
+        const rows = selectedServices.map((sid) => ({
+          specialist_id: selectedSpecialistId,
+          service_id: sid,
+        }));
+        const { error } = await supabase.from("specialist_services").insert(rows);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({ title: "Servicii actualizate" });
+      queryClient.invalidateQueries({ queryKey: ["specialist-services", selectedSpecialistId] });
+    },
+    onError: () => toast({ title: "Eroare la salvare servicii", variant: "destructive" }),
+  });
+
+  const saveWorkHoursMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSpecialistId) return;
+      const updates = Object.entries(editedWorkHours).map(([dayStr, changes]) => {
+        const day = Number(dayStr);
+        const existing = specialistWorkHours.find((wh) => wh.day_of_week === day);
+        if (existing) {
+          return {
+            id: existing.id,
+            data: {
+              start_time: (changes.start_time as string) ?? existing.start_time,
+              end_time: (changes.end_time as string) ?? existing.end_time,
+              is_working_day: (changes.is_working_day as boolean) ?? existing.is_working_day,
+            },
+          };
+        }
+        return null;
+      }).filter(Boolean) as { id: string; data: any }[];
+
+      for (const u of updates) {
+        const { error } = await supabase
+          .from("specialist_work_hours")
+          .update(u.data)
+          .eq("id", u.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({ title: "Program actualizat" });
+      setEditedWorkHours({});
+      queryClient.invalidateQueries({ queryKey: ["specialist-work-hours", selectedSpecialistId] });
+    },
+    onError: () => toast({ title: "Eroare la salvare program", variant: "destructive" }),
+  });
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditingSpecialist(null);
+    setFormName("");
+    setFormTitle("");
+    setFormActive(true);
+  };
+
+  const openCreate = () => {
+    setFormName("");
+    setFormTitle("");
+    setFormActive(true);
+    setEditingSpecialist(null);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (s: Specialist) => {
+    setFormName(s.name);
+    setFormTitle(s.title);
+    setFormActive(s.is_active);
+    setEditingSpecialist(s);
+    setDialogOpen(true);
+  };
+
+  const handleWHChange = (day: number, field: keyof SpecialistWorkHour, value: string | boolean) => {
+    setEditedWorkHours((prev) => ({
+      ...prev,
+      [day]: { ...prev[day], [field]: value },
+    }));
+  };
+
+  const getWHValue = (day: number, field: keyof SpecialistWorkHour) => {
+    const edited = editedWorkHours[day]?.[field];
+    if (edited !== undefined) return edited;
+    const wh = specialistWorkHours.find((w) => w.day_of_week === day);
+    return wh?.[field] ?? "";
+  };
+
+  const selectedSpecialist = specialists.find((s) => s.id === selectedSpecialistId);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-purple" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Specialists List */}
+      <Card variant="elevated">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Specialiști</CardTitle>
+            <CardDescription>Gestionează specialiștii salonului</CardDescription>
+          </div>
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            Adaugă specialist
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {specialists.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              Niciun specialist adăugat încă. Adaugă primul specialist.
+            </p>
+          ) : (
+            <div className="grid gap-3">
+              {specialists.map((s) => (
+                <div
+                  key={s.id}
+                  className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all ${
+                    selectedSpecialistId === s.id ? "ring-2 ring-purple bg-purple/5" : "bg-card hover:bg-muted/50"
+                  }`}
+                  onClick={() => setSelectedSpecialistId(s.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center text-purple font-semibold">
+                      {s.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-medium">{s.name}</p>
+                      <p className="text-sm text-muted-foreground">{s.title || "Specialist"}</p>
+                    </div>
+                    {!s.is_active && (
+                      <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">Inactiv</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(s); }}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteId(s.id); }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Selected Specialist Config */}
+      {selectedSpecialist && (
+        <Card variant="elevated">
+          <CardHeader>
+            <CardTitle>Configurare: {selectedSpecialist.name}</CardTitle>
+            <CardDescription>Servicii și program de lucru</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="services">
+              <TabsList className="mb-4">
+                <TabsTrigger value="services" className="flex items-center gap-2">
+                  <Scissors className="h-4 w-4" />
+                  Servicii
+                </TabsTrigger>
+                <TabsTrigger value="schedule" className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Program
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="services">
+                <div className="space-y-3">
+                  {services.map((service) => (
+                    <div key={service.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                      <Checkbox
+                        checked={selectedServices.includes(service.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedServices((prev) =>
+                            checked ? [...prev, service.id] : prev.filter((id) => id !== service.id)
+                          );
+                        }}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium">{service.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {service.duration_minutes} min — {Number(service.price)} RON
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="hero"
+                    onClick={() => saveServicesMutation.mutate()}
+                    disabled={saveServicesMutation.isPending}
+                    className="mt-4"
+                  >
+                    {saveServicesMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4" /> Salvează servicii</>}
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="schedule">
+                <div className="space-y-3">
+                  {DAYS_OF_WEEK.map((day, index) => {
+                    const isWorking = getWHValue(index, "is_working_day") as boolean;
+                    return (
+                      <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 rounded-lg border bg-card">
+                        <div className="flex items-center gap-3 min-w-[140px]">
+                          <Switch
+                            checked={isWorking}
+                            onCheckedChange={(checked) => handleWHChange(index, "is_working_day", checked)}
+                          />
+                          <Label className="font-medium">{day}</Label>
+                        </div>
+                        {isWorking ? (
+                          <div className="flex items-center gap-2 flex-1">
+                            <div className="flex-1">
+                              <Label className="text-xs text-muted-foreground">Început</Label>
+                              <Input
+                                type="time"
+                                value={getWHValue(index, "start_time") as string}
+                                onChange={(e) => handleWHChange(index, "start_time", e.target.value)}
+                                className="mt-1"
+                              />
+                            </div>
+                            <span className="text-muted-foreground mt-5">–</span>
+                            <div className="flex-1">
+                              <Label className="text-xs text-muted-foreground">Sfârșit</Label>
+                              <Input
+                                type="time"
+                                value={getWHValue(index, "end_time") as string}
+                                onChange={(e) => handleWHChange(index, "end_time", e.target.value)}
+                                className="mt-1"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground italic">Liber</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {Object.keys(editedWorkHours).length > 0 && (
+                    <Button
+                      variant="hero"
+                      onClick={() => saveWorkHoursMutation.mutate()}
+                      disabled={saveWorkHoursMutation.isPending}
+                      className="mt-4"
+                    >
+                      {saveWorkHoursMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4" /> Salvează program</>}
+                    </Button>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={closeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingSpecialist ? "Editează specialist" : "Adaugă specialist"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label>Nume</Label>
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nume specialist" className="mt-1" />
+            </div>
+            <div>
+              <Label>Titlu / Funcție</Label>
+              <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="ex: Frizer profesionist" className="mt-1" />
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch checked={formActive} onCheckedChange={setFormActive} />
+              <Label>Activ</Label>
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="ghost" onClick={closeDialog}>Anulează</Button>
+              <Button
+                onClick={() => editingSpecialist ? updateMutation.mutate() : createMutation.mutate()}
+                disabled={!formName.trim() || createMutation.isPending || updateMutation.isPending}
+              >
+                {(createMutation.isPending || updateMutation.isPending) ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : editingSpecialist ? "Actualizează" : "Adaugă"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Șterge specialistul?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Această acțiune nu poate fi anulată. Programul și serviciile asociate vor fi șterse.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anulează</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
+              Șterge
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
