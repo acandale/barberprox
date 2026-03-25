@@ -62,6 +62,7 @@ interface AppointmentWithDetails {
   status: string;
   notes: string | null;
   user_id: string;
+  specialist_id: string | null;
   profiles: ProfileInfo | null;
   services: {
     name: string;
