@@ -21,6 +21,7 @@ export type Database = {
           id: string
           notes: string | null
           service_id: string
+          specialist_id: string | null
           start_time: string
           status: string | null
           updated_at: string | null
@@ -32,6 +33,7 @@ export type Database = {
           id?: string
           notes?: string | null
           service_id: string
+          specialist_id?: string | null
           start_time: string
           status?: string | null
           updated_at?: string | null
@@ -43,6 +45,7 @@ export type Database = {
           id?: string
           notes?: string | null
           service_id?: string
+          specialist_id?: string | null
           start_time?: string
           status?: string | null
           updated_at?: string | null
@@ -54,6 +57,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "specialists"
             referencedColumns: ["id"]
           },
         ]
@@ -250,6 +260,98 @@ export type Database = {
           id?: string
           name?: string
           price?: number
+        }
+        Relationships: []
+      }
+      specialist_services: {
+        Row: {
+          id: string
+          service_id: string
+          specialist_id: string
+        }
+        Insert: {
+          id?: string
+          service_id: string
+          specialist_id: string
+        }
+        Update: {
+          id?: string
+          service_id?: string
+          specialist_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "specialist_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "specialist_services_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "specialists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      specialist_work_hours: {
+        Row: {
+          day_of_week: number
+          end_time: string
+          id: string
+          is_working_day: boolean | null
+          specialist_id: string
+          start_time: string
+        }
+        Insert: {
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_working_day?: boolean | null
+          specialist_id: string
+          start_time: string
+        }
+        Update: {
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_working_day?: boolean | null
+          specialist_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "specialist_work_hours_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "specialists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      specialists: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          title?: string | null
         }
         Relationships: []
       }
