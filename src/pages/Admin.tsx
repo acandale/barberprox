@@ -163,6 +163,7 @@ export default function AdminPage() {
           status,
           notes,
           user_id,
+          specialist_id,
           services (
             name,
             duration_minutes,
@@ -632,8 +633,7 @@ export default function AdminPage() {
                   <div>
                     <p className="font-semibold">{selectedAppointment.services.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {selectedAppointment.services.duration_minutes} {t("admin.minutes")} • $
-                      {Number(selectedAppointment.services.price)}
+                      {selectedAppointment.services.duration_minutes} {t("admin.minutes")} • {Number(selectedAppointment.services.price)} RON
                     </p>
                   </div>
                 </div>
