@@ -44,8 +44,8 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
   const queryClient = useQueryClient();
 
   const [selectedClientId, setSelectedClientId] = useState<string>("");
-  const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<string>("");
+  const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
