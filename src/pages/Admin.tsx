@@ -78,7 +78,7 @@ const SERVICE_COLORS: Record<string, string> = {
 };
 
 type ViewMode = "month" | "week" | "day";
-type AdminTab = "appointments" | "work-hours" | "blocked-times" | "services" | "vacations" | "settings" | "specialists";
+type AdminTab = "appointments" | "work-hours" | "blocked-times" | "vacations" | "settings" | "specialists";
 
 export default function AdminPage() {
   const { user, isAdmin, isLoading: authLoading } = useAuth();
