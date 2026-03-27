@@ -578,10 +578,6 @@ export default function AdminPage() {
             <SpecialistsManager />
           </TabsContent>
 
-          {/* Services Tab */}
-          <TabsContent value="services">
-            <ServicesManager />
-          </TabsContent>
 
           {/* Work Hours Tab */}
           <TabsContent value="work-hours">
