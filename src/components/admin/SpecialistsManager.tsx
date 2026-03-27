@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Loader2, Plus, Pencil, Trash2, Save, Clock, Scissors } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Specialist {
@@ -41,6 +42,14 @@ interface SpecialistWorkHour {
   start_time: string;
   end_time: string;
   is_working_day: boolean;
+}
+
+interface Service {
+  id: string;
+  name: string;
+  description: string | null;
+  duration_minutes: number;
+  price: number;
 }
 
 const DAYS_OF_WEEK = [
@@ -61,6 +70,12 @@ export function SpecialistsManager() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [editedWorkHours, setEditedWorkHours] = useState<Record<number, Partial<SpecialistWorkHour>>>({});
 
+  // Service CRUD state
+  const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [serviceForm, setServiceForm] = useState({ name: "", description: "", duration_minutes: "30", price: "0" });
+  const [deleteServiceId, setDeleteServiceId] = useState<string | null>(null);
+
   // Fetch specialists
   const { data: specialists = [], isLoading } = useQuery({
     queryKey: ["admin-specialists"],
@@ -80,7 +95,7 @@ export function SpecialistsManager() {
     queryFn: async () => {
       const { data, error } = await supabase.from("services").select("*").order("name");
       if (error) throw error;
-      return data;
+      return data as Service[];
     },
   });
 
@@ -123,7 +138,7 @@ export function SpecialistsManager() {
     setEditedWorkHours({});
   }, [selectedSpecialistId]);
 
-  // Mutations
+  // Specialist mutations
   const createMutation = useMutation({
     mutationFn: async () => {
       const { data: specialist, error } = await supabase
@@ -132,14 +147,12 @@ export function SpecialistsManager() {
         .select()
         .single();
       if (error) throw error;
-
-      // Initialize work hours for all 7 days
       const workHoursRows = Array.from({ length: 7 }, (_, i) => ({
         specialist_id: specialist.id,
         day_of_week: i,
         start_time: "09:00",
         end_time: "18:00",
-        is_working_day: i >= 1 && i <= 5, // Mon-Fri by default
+        is_working_day: i >= 1 && i <= 5,
       }));
       const { error: whError } = await supabase.from("specialist_work_hours").insert(workHoursRows);
       if (whError) throw whError;
@@ -186,7 +199,6 @@ export function SpecialistsManager() {
   const saveServicesMutation = useMutation({
     mutationFn: async () => {
       if (!selectedSpecialistId) return;
-      // Delete existing and re-insert
       await supabase.from("specialist_services").delete().eq("specialist_id", selectedSpecialistId);
       if (selectedServices.length > 0) {
         const rows = selectedServices.map((sid) => ({
@@ -239,6 +251,57 @@ export function SpecialistsManager() {
     onError: () => toast({ title: "Eroare la salvare program", variant: "destructive" }),
   });
 
+  // Service CRUD mutations
+  const createServiceMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("services").insert({
+        name: serviceForm.name,
+        description: serviceForm.description || null,
+        duration_minutes: parseInt(serviceForm.duration_minutes),
+        price: parseFloat(serviceForm.price),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Serviciu adăugat" });
+      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      closeServiceDialog();
+    },
+    onError: () => toast({ title: "Eroare la adăugare serviciu", variant: "destructive" }),
+  });
+
+  const updateServiceMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingService) return;
+      const { error } = await supabase.from("services").update({
+        name: serviceForm.name,
+        description: serviceForm.description || null,
+        duration_minutes: parseInt(serviceForm.duration_minutes),
+        price: parseFloat(serviceForm.price),
+      }).eq("id", editingService.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Serviciu actualizat" });
+      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      closeServiceDialog();
+    },
+    onError: () => toast({ title: "Eroare la actualizare", variant: "destructive" }),
+  });
+
+  const deleteServiceMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("services").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Serviciu șters" });
+      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      setDeleteServiceId(null);
+    },
+    onError: () => toast({ title: "Ștergerea a eșuat", variant: "destructive" }),
+  });
+
   const closeDialog = () => {
     setDialogOpen(false);
     setEditingSpecialist(null);
@@ -248,19 +311,38 @@ export function SpecialistsManager() {
   };
 
   const openCreate = () => {
-    setFormName("");
-    setFormTitle("");
-    setFormActive(true);
+    setFormName(""); setFormTitle(""); setFormActive(true);
     setEditingSpecialist(null);
     setDialogOpen(true);
   };
 
   const openEdit = (s: Specialist) => {
-    setFormName(s.name);
-    setFormTitle(s.title);
-    setFormActive(s.is_active);
+    setFormName(s.name); setFormTitle(s.title); setFormActive(s.is_active);
     setEditingSpecialist(s);
     setDialogOpen(true);
+  };
+
+  const closeServiceDialog = () => {
+    setServiceDialogOpen(false);
+    setEditingService(null);
+    setServiceForm({ name: "", description: "", duration_minutes: "30", price: "0" });
+  };
+
+  const openCreateService = () => {
+    setServiceForm({ name: "", description: "", duration_minutes: "30", price: "0" });
+    setEditingService(null);
+    setServiceDialogOpen(true);
+  };
+
+  const openEditService = (s: Service) => {
+    setServiceForm({
+      name: s.name,
+      description: s.description || "",
+      duration_minutes: String(s.duration_minutes),
+      price: String(s.price),
+    });
+    setEditingService(s);
+    setServiceDialogOpen(true);
   };
 
   const handleWHChange = (day: number, field: keyof SpecialistWorkHour, value: string | boolean) => {
@@ -311,9 +393,10 @@ export function SpecialistsManager() {
               {specialists.map((s) => (
                 <div
                   key={s.id}
-                  className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all ${
+                  className={cn(
+                    "flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all",
                     selectedSpecialistId === s.id ? "ring-2 ring-purple bg-purple/5" : "bg-card hover:bg-muted/50"
-                  }`}
+                  )}
                   onClick={() => setSelectedSpecialistId(s.id)}
                 >
                   <div className="flex items-center gap-3">
@@ -365,24 +448,43 @@ export function SpecialistsManager() {
 
               <TabsContent value="services">
                 <div className="space-y-3">
-                  {services.map((service) => (
-                    <div key={service.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                      <Checkbox
-                        checked={selectedServices.includes(service.id)}
-                        onCheckedChange={(checked) => {
-                          setSelectedServices((prev) =>
-                            checked ? [...prev, service.id] : prev.filter((id) => id !== service.id)
-                          );
-                        }}
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium">{service.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {service.duration_minutes} min — {Number(service.price)} RON
-                        </p>
+                  {/* Add new service button */}
+                  <div className="flex justify-end mb-2">
+                    <Button variant="outline" size="sm" onClick={openCreateService}>
+                      <Plus className="h-4 w-4" />
+                      Serviciu nou
+                    </Button>
+                  </div>
+                  {services.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">Niciun serviciu. Adaugă primul serviciu.</p>
+                  ) : (
+                    services.map((service) => (
+                      <div key={service.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                        <Checkbox
+                          checked={selectedServices.includes(service.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedServices((prev) =>
+                              checked ? [...prev, service.id] : prev.filter((id) => id !== service.id)
+                            );
+                          }}
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium">{service.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {service.duration_minutes} min — {Number(service.price)} RON
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openEditService(service)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => setDeleteServiceId(service.id)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                   <Button
                     variant="hero"
                     onClick={() => saveServicesMutation.mutate()}
@@ -452,54 +554,100 @@ export function SpecialistsManager() {
         </Card>
       )}
 
-      {/* Create/Edit Dialog */}
+      {/* Create/Edit Specialist Dialog */}
       <Dialog open={dialogOpen} onOpenChange={closeDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingSpecialist ? "Editează specialist" : "Adaugă specialist"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
-            <div>
+            <div className="space-y-2">
               <Label>Nume</Label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Nume specialist" className="mt-1" />
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Numele specialistului" />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Titlu / Funcție</Label>
-              <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="ex: Frizer profesionist" className="mt-1" />
+              <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="ex: Frizer, Colorist" />
             </div>
             <div className="flex items-center gap-3">
               <Switch checked={formActive} onCheckedChange={setFormActive} />
               <Label>Activ</Label>
             </div>
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="flex justify-end gap-2 pt-4">
               <Button variant="ghost" onClick={closeDialog}>Anulează</Button>
               <Button
                 onClick={() => editingSpecialist ? updateMutation.mutate() : createMutation.mutate()}
                 disabled={!formName.trim() || createMutation.isPending || updateMutation.isPending}
               >
-                {(createMutation.isPending || updateMutation.isPending) ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : editingSpecialist ? "Actualizează" : "Adaugă"}
+                {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : editingSpecialist ? "Salvează" : "Adaugă"}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm */}
+      {/* Create/Edit Service Dialog */}
+      <Dialog open={serviceDialogOpen} onOpenChange={closeServiceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingService ? "Editează serviciu" : "Adaugă serviciu nou"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label>Nume serviciu</Label>
+              <Input value={serviceForm.name} onChange={(e) => setServiceForm(p => ({ ...p, name: e.target.value }))} placeholder="ex: Tuns, Barbă" />
+            </div>
+            <div className="space-y-2">
+              <Label>Descriere</Label>
+              <Input value={serviceForm.description} onChange={(e) => setServiceForm(p => ({ ...p, description: e.target.value }))} placeholder="Descriere opțională" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Durată (minute)</Label>
+                <Input type="number" value={serviceForm.duration_minutes} onChange={(e) => setServiceForm(p => ({ ...p, duration_minutes: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Preț (RON)</Label>
+                <Input type="number" value={serviceForm.price} onChange={(e) => setServiceForm(p => ({ ...p, price: e.target.value }))} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="ghost" onClick={closeServiceDialog}>Anulează</Button>
+              <Button
+                onClick={() => editingService ? updateServiceMutation.mutate() : createServiceMutation.mutate()}
+                disabled={!serviceForm.name.trim() || createServiceMutation.isPending || updateServiceMutation.isPending}
+              >
+                {(createServiceMutation.isPending || updateServiceMutation.isPending) ? <Loader2 className="h-4 w-4 animate-spin" /> : editingService ? "Salvează" : "Adaugă"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Specialist Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Șterge specialistul?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Această acțiune nu poate fi anulată. Programul și serviciile asociate vor fi șterse.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Ești sigur?</AlertDialogTitle>
+            <AlertDialogDescription>Specialistul va fi șters definitiv.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Anulează</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>
-              Șterge
-            </AlertDialogAction>
+            <AlertDialogAction onClick={() => deleteId && deleteMutation.mutate(deleteId)}>Șterge</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Service Confirmation */}
+      <AlertDialog open={!!deleteServiceId} onOpenChange={() => setDeleteServiceId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Șterge serviciu?</AlertDialogTitle>
+            <AlertDialogDescription>Serviciul va fi șters definitiv din sistem.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anulează</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteServiceId && deleteServiceMutation.mutate(deleteServiceId)}>Șterge</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -44,8 +44,8 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
   const queryClient = useQueryClient();
 
   const [selectedClientId, setSelectedClientId] = useState<string>("");
-  const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<string>("");
+  const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
@@ -61,32 +61,34 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     enabled: open,
   });
 
-  // Fetch services
-  const { data: services = [] } = useQuery({
-    queryKey: ["services"],
+  // Fetch all active specialists
+  const { data: specialists = [] } = useQuery({
+    queryKey: ["admin-specialists-all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("services").select("*").order("name");
+      const { data, error } = await supabase
+        .from("specialists")
+        .select("*")
+        .eq("is_active", true)
+        .order("name");
       if (error) throw error;
       return data;
     },
     enabled: open,
   });
 
-  // Fetch specialists that offer the selected service
-  const { data: specialists = [] } = useQuery({
-    queryKey: ["admin-specialists-for-service", selectedServiceId],
+  // Fetch services for the selected specialist
+  const { data: services = [] } = useQuery({
+    queryKey: ["admin-services-for-specialist", selectedSpecialistId],
     queryFn: async () => {
-      if (!selectedServiceId) return [];
+      if (!selectedSpecialistId) return [];
       const { data, error } = await supabase
         .from("specialist_services")
-        .select("specialist_id, specialists(id, name, title, is_active)")
-        .eq("service_id", selectedServiceId);
+        .select("service_id, services(id, name, description, duration_minutes, price)")
+        .eq("specialist_id", selectedSpecialistId);
       if (error) throw error;
-      return (data || [])
-        .map((row: any) => row.specialists)
-        .filter((s: any) => s && s.is_active);
+      return (data || []).map((row: any) => row.services).filter(Boolean);
     },
-    enabled: !!selectedServiceId && open,
+    enabled: !!selectedSpecialistId && open,
   });
 
   // Fetch specialist work hours
@@ -231,8 +233,8 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
 
   const resetAndClose = () => {
     setSelectedClientId("");
-    setSelectedServiceId("");
     setSelectedSpecialistId("");
+    setSelectedServiceId("");
     setSelectedDate(undefined);
     setSelectedTime(null);
     setClientSearchOpen(false);
@@ -281,34 +283,34 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
             </Popover>
           </div>
 
-          {/* Service */}
+          {/* Specialist */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Serviciu</label>
-            <Select value={selectedServiceId} onValueChange={(v) => { setSelectedServiceId(v); setSelectedSpecialistId(""); setSelectedTime(null); setSelectedDate(undefined); }}>
-              <SelectTrigger><SelectValue placeholder="Selectează un serviciu" /></SelectTrigger>
+            <label className="text-sm font-medium">Specialist</label>
+            <Select value={selectedSpecialistId} onValueChange={(v) => { setSelectedSpecialistId(v); setSelectedServiceId(""); setSelectedTime(null); setSelectedDate(undefined); }}>
+              <SelectTrigger><SelectValue placeholder="Selectează specialist" /></SelectTrigger>
               <SelectContent>
-                {services.map((s) => (
+                {specialists.map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.name} — {s.duration_minutes}min — {Number(s.price)} RON
+                    {s.name} — {s.title || "Specialist"}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Specialist */}
-          {selectedServiceId && (
+          {/* Service */}
+          {selectedSpecialistId && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Specialist</label>
-              {specialists.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Niciun specialist disponibil pentru acest serviciu.</p>
+              <label className="text-sm font-medium">Serviciu</label>
+              {services.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Niciun serviciu disponibil pentru acest specialist.</p>
               ) : (
-                <Select value={selectedSpecialistId} onValueChange={(v) => { setSelectedSpecialistId(v); setSelectedTime(null); setSelectedDate(undefined); }}>
-                  <SelectTrigger><SelectValue placeholder="Selectează specialist" /></SelectTrigger>
+                <Select value={selectedServiceId} onValueChange={(v) => { setSelectedServiceId(v); setSelectedTime(null); setSelectedDate(undefined); }}>
+                  <SelectTrigger><SelectValue placeholder="Selectează un serviciu" /></SelectTrigger>
                   <SelectContent>
-                    {specialists.map((s: any) => (
+                    {services.map((s: any) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {s.name} — {s.title || "Specialist"}
+                        {s.name} — {s.duration_minutes}min — {Number(s.price)} RON
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -318,7 +320,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
           )}
 
           {/* Date */}
-          {selectedSpecialistId && (
+          {selectedSpecialistId && selectedServiceId && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Data</label>
               <Calendar mode="single" selected={selectedDate} onSelect={(date) => { setSelectedDate(date); setSelectedTime(null); }} disabled={isDateDisabled} className={cn("rounded-md border pointer-events-auto")} />

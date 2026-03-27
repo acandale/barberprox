@@ -43,7 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { WorkHoursManager } from "@/components/admin/WorkHoursManager";
 import { BlockedTimesCalendar } from "@/components/admin/BlockedTimesCalendar";
-import { ServicesManager } from "@/components/admin/ServicesManager";
+
 import { VacationsManager } from "@/components/admin/VacationsManager";
 import { AdminBookAppointment } from "@/components/admin/AdminBookAppointment";
 import { SalonSettingsManager } from "@/components/admin/SalonSettingsManager";
@@ -78,7 +78,7 @@ const SERVICE_COLORS: Record<string, string> = {
 };
 
 type ViewMode = "month" | "week" | "day";
-type AdminTab = "appointments" | "work-hours" | "blocked-times" | "services" | "vacations" | "settings" | "specialists";
+type AdminTab = "appointments" | "work-hours" | "blocked-times" | "vacations" | "settings" | "specialists";
 
 export default function AdminPage() {
   const { user, isAdmin, isLoading: authLoading } = useAuth();
@@ -460,10 +460,6 @@ export default function AdminPage() {
               <User className="h-4 w-4" />
               Specialiști
             </TabsTrigger>
-            <TabsTrigger value="services" className="flex items-center gap-2">
-              <Scissors className="h-4 w-4" />
-              {t("admin.services")}
-            </TabsTrigger>
             <TabsTrigger value="work-hours" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               {t("admin.workHours")}
@@ -578,10 +574,6 @@ export default function AdminPage() {
             <SpecialistsManager />
           </TabsContent>
 
-          {/* Services Tab */}
-          <TabsContent value="services">
-            <ServicesManager />
-          </TabsContent>
 
           {/* Work Hours Tab */}
           <TabsContent value="work-hours">
