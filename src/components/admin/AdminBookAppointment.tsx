@@ -283,34 +283,34 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
             </Popover>
           </div>
 
-          {/* Service */}
+          {/* Specialist */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Serviciu</label>
-            <Select value={selectedServiceId} onValueChange={(v) => { setSelectedServiceId(v); setSelectedSpecialistId(""); setSelectedTime(null); setSelectedDate(undefined); }}>
-              <SelectTrigger><SelectValue placeholder="Selectează un serviciu" /></SelectTrigger>
+            <label className="text-sm font-medium">Specialist</label>
+            <Select value={selectedSpecialistId} onValueChange={(v) => { setSelectedSpecialistId(v); setSelectedServiceId(""); setSelectedTime(null); setSelectedDate(undefined); }}>
+              <SelectTrigger><SelectValue placeholder="Selectează specialist" /></SelectTrigger>
               <SelectContent>
-                {services.map((s) => (
+                {specialists.map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.name} — {s.duration_minutes}min — {Number(s.price)} RON
+                    {s.name} — {s.title || "Specialist"}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Specialist */}
-          {selectedServiceId && (
+          {/* Service */}
+          {selectedSpecialistId && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Specialist</label>
-              {specialists.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Niciun specialist disponibil pentru acest serviciu.</p>
+              <label className="text-sm font-medium">Serviciu</label>
+              {services.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Niciun serviciu disponibil pentru acest specialist.</p>
               ) : (
-                <Select value={selectedSpecialistId} onValueChange={(v) => { setSelectedSpecialistId(v); setSelectedTime(null); setSelectedDate(undefined); }}>
-                  <SelectTrigger><SelectValue placeholder="Selectează specialist" /></SelectTrigger>
+                <Select value={selectedServiceId} onValueChange={(v) => { setSelectedServiceId(v); setSelectedTime(null); setSelectedDate(undefined); }}>
+                  <SelectTrigger><SelectValue placeholder="Selectează un serviciu" /></SelectTrigger>
                   <SelectContent>
-                    {specialists.map((s: any) => (
+                    {services.map((s: any) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {s.name} — {s.title || "Specialist"}
+                        {s.name} — {s.duration_minutes}min — {Number(s.price)} RON
                       </SelectItem>
                     ))}
                   </SelectContent>
