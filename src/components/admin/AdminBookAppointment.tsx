@@ -320,7 +320,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
           )}
 
           {/* Date */}
-          {selectedSpecialistId && (
+          {selectedSpecialistId && selectedServiceId && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Data</label>
               <Calendar mode="single" selected={selectedDate} onSelect={(date) => { setSelectedDate(date); setSelectedTime(null); }} disabled={isDateDisabled} className={cn("rounded-md border pointer-events-auto")} />
