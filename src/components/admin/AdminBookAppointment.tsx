@@ -233,8 +233,8 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
 
   const resetAndClose = () => {
     setSelectedClientId("");
-    setSelectedServiceId("");
     setSelectedSpecialistId("");
+    setSelectedServiceId("");
     setSelectedDate(undefined);
     setSelectedTime(null);
     setClientSearchOpen(false);
