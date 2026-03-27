@@ -460,10 +460,6 @@ export default function AdminPage() {
               <User className="h-4 w-4" />
               Specialiști
             </TabsTrigger>
-            <TabsTrigger value="services" className="flex items-center gap-2">
-              <Scissors className="h-4 w-4" />
-              {t("admin.services")}
-            </TabsTrigger>
             <TabsTrigger value="work-hours" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               {t("admin.workHours")}
