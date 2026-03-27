@@ -41,10 +41,10 @@ export default function BookingPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
 
-  // Steps: 1=service, 2=specialist, 3=date/time, 4=confirm
+  // Steps: 1=specialist, 2=service, 3=date/time, 4=confirm
   const [step, setStep] = useState(1);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedSpecialist, setSelectedSpecialist] = useState<Specialist | null>(null);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isBooking, setIsBooking] = useState(false);
@@ -64,30 +64,35 @@ export default function BookingPage() {
     return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
-  const { data: services = [] } = useQuery({
-    queryKey: ["services"],
+  // Fetch all active specialists
+  const { data: specialists = [] } = useQuery({
+    queryKey: ["booking-specialists-all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("services").select("*").order("duration_minutes", { ascending: false });
+      const { data, error } = await supabase
+        .from("specialists")
+        .select("*")
+        .eq("is_active", true)
+        .order("name");
       if (error) throw error;
-      return data as Service[];
+      return data as Specialist[];
     },
   });
 
-  // Fetch active specialists that offer the selected service
-  const { data: specialists = [] } = useQuery({
-    queryKey: ["booking-specialists", selectedService?.id],
+  // Fetch services for the selected specialist
+  const { data: services = [] } = useQuery({
+    queryKey: ["booking-services-for-specialist", selectedSpecialist?.id],
     queryFn: async () => {
-      if (!selectedService) return [];
+      if (!selectedSpecialist) return [];
       const { data, error } = await supabase
         .from("specialist_services")
-        .select("specialist_id, specialists(id, name, title, is_active)")
-        .eq("service_id", selectedService.id);
+        .select("service_id, services(id, name, description, duration_minutes, price)")
+        .eq("specialist_id", selectedSpecialist.id);
       if (error) throw error;
       return (data || [])
-        .map((row: any) => row.specialists as Specialist)
-        .filter((s: Specialist) => s && s.is_active);
+        .map((row: any) => row.services as Service)
+        .filter(Boolean);
     },
-    enabled: !!selectedService,
+    enabled: !!selectedSpecialist,
   });
 
   // Fetch specialist-specific work hours
@@ -225,7 +230,7 @@ export default function BookingPage() {
   }
 
   const totalSteps = 4;
-  const stepLabels = [t("booking.service"), t("booking.specialist") || "Specialist", t("booking.dateTime"), t("booking.confirm")];
+  const stepLabels = [t("booking.specialist") || "Specialist", t("booking.service"), t("booking.dateTime"), t("booking.confirm")];
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -250,50 +255,15 @@ export default function BookingPage() {
           })}
         </div>
 
-        {/* Step 1: Select Service */}
+        {/* Step 1: Select Specialist */}
         {step === 1 && (
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-foreground">{t("booking.selectService")}</h1>
-              <p className="text-muted-foreground">{t("booking.selectServiceDesc")}</p>
-            </div>
-            <div className="grid gap-4">
-              {services.map((service) => (
-                <Card key={service.id} variant={selectedService?.id === service.id ? "elevated" : "default"} className={cn("cursor-pointer transition-all", selectedService?.id === service.id && "ring-2 ring-purple")} onClick={() => { setSelectedService(service); setSelectedSpecialist(null); setSelectedDate(undefined); setSelectedTime(null); }}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-purple/10 text-purple"><Scissors className="h-6 w-6" /></div>
-                        <div>
-                          <h3 className="font-semibold text-lg">{service.name}</h3>
-                          <p className="text-sm text-muted-foreground">{service.description}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-purple">{Number(service.price)} RON</p>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1"><Clock className="h-4 w-4" />{service.duration_minutes} {t("services.min")}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <div className="flex justify-between mt-8">
-              <Button variant="ghost" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" />{t("booking.back")}</Button>
-              <Button variant="hero" disabled={!selectedService} onClick={() => setStep(2)}>{t("booking.continue")}<ArrowRight className="h-4 w-4" /></Button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Select Specialist */}
-        {step === 2 && (
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-foreground">{t("booking.selectSpecialist") || "Alege specialistul"}</h1>
               <p className="text-muted-foreground">{t("booking.selectSpecialistDesc") || "Alege specialistul preferat"}</p>
             </div>
             {specialists.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">Niciun specialist disponibil pentru acest serviciu.</p>
+              <p className="text-center text-muted-foreground py-8">Niciun specialist disponibil.</p>
             ) : (
               <div className="grid gap-4">
                 {specialists.map((specialist) => (
@@ -301,7 +271,7 @@ export default function BookingPage() {
                     key={specialist.id}
                     variant={selectedSpecialist?.id === specialist.id ? "elevated" : "default"}
                     className={cn("cursor-pointer transition-all", selectedSpecialist?.id === specialist.id && "ring-2 ring-purple")}
-                    onClick={() => { setSelectedSpecialist(specialist); setSelectedDate(undefined); setSelectedTime(null); }}
+                    onClick={() => { setSelectedSpecialist(specialist); setSelectedService(null); setSelectedDate(undefined); setSelectedTime(null); }}
                   >
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
@@ -326,8 +296,47 @@ export default function BookingPage() {
               </div>
             )}
             <div className="flex justify-between mt-8">
+              <Button variant="ghost" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" />{t("booking.back")}</Button>
+              <Button variant="hero" disabled={!selectedSpecialist} onClick={() => setStep(2)}>{t("booking.continue")}<ArrowRight className="h-4 w-4" /></Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Select Service */}
+        {step === 2 && (
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold text-foreground">{t("booking.selectService")}</h1>
+              <p className="text-muted-foreground">{t("booking.selectServiceDesc")}</p>
+            </div>
+            {services.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Niciun serviciu disponibil pentru acest specialist.</p>
+            ) : (
+              <div className="grid gap-4">
+                {services.map((service) => (
+                  <Card key={service.id} variant={selectedService?.id === service.id ? "elevated" : "default"} className={cn("cursor-pointer transition-all", selectedService?.id === service.id && "ring-2 ring-purple")} onClick={() => { setSelectedService(service); setSelectedDate(undefined); setSelectedTime(null); }}>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-lg bg-purple/10 text-purple"><Scissors className="h-6 w-6" /></div>
+                          <div>
+                            <h3 className="font-semibold text-lg">{service.name}</h3>
+                            <p className="text-sm text-muted-foreground">{service.description}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-purple">{Number(service.price)} RON</p>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1"><Clock className="h-4 w-4" />{service.duration_minutes} {t("services.min")}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-between mt-8">
               <Button variant="ghost" onClick={() => setStep(1)}><ArrowLeft className="h-4 w-4" />{t("booking.back")}</Button>
-              <Button variant="hero" disabled={!selectedSpecialist} onClick={() => setStep(3)}>{t("booking.continue")}<ArrowRight className="h-4 w-4" /></Button>
+              <Button variant="hero" disabled={!selectedService} onClick={() => setStep(3)}>{t("booking.continue")}<ArrowRight className="h-4 w-4" /></Button>
             </div>
           </div>
         )}
@@ -388,20 +397,20 @@ export default function BookingPage() {
               <CardContent className="p-8">
                 <div className="space-y-6">
                   <div className="p-6 rounded-xl bg-gradient-to-br from-navy to-navy-light text-white">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="p-3 rounded-lg bg-white/10"><Scissors className="h-6 w-6 text-purple-light" /></div>
-                      <div>
-                        <p className="font-bold text-xl">{selectedService.name}</p>
-                        <p className="text-white/70">{selectedService.description}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 mb-4 pt-3 border-t border-white/20">
+                    <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-purple-light font-bold">
                         {selectedSpecialist.name.charAt(0)}
                       </div>
                       <div>
                         <p className="font-semibold">{selectedSpecialist.name}</p>
                         <p className="text-white/60 text-sm">{selectedSpecialist.title || "Specialist"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 mb-4 pt-3 border-t border-white/20">
+                      <div className="p-3 rounded-lg bg-white/10"><Scissors className="h-6 w-6 text-purple-light" /></div>
+                      <div>
+                        <p className="font-bold text-xl">{selectedService.name}</p>
+                        <p className="text-white/70">{selectedService.description}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/20">
