@@ -61,32 +61,34 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     enabled: open,
   });
 
-  // Fetch services
-  const { data: services = [] } = useQuery({
-    queryKey: ["services"],
+  // Fetch all active specialists
+  const { data: specialists = [] } = useQuery({
+    queryKey: ["admin-specialists-all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("services").select("*").order("name");
+      const { data, error } = await supabase
+        .from("specialists")
+        .select("*")
+        .eq("is_active", true)
+        .order("name");
       if (error) throw error;
       return data;
     },
     enabled: open,
   });
 
-  // Fetch specialists that offer the selected service
-  const { data: specialists = [] } = useQuery({
-    queryKey: ["admin-specialists-for-service", selectedServiceId],
+  // Fetch services for the selected specialist
+  const { data: services = [] } = useQuery({
+    queryKey: ["admin-services-for-specialist", selectedSpecialistId],
     queryFn: async () => {
-      if (!selectedServiceId) return [];
+      if (!selectedSpecialistId) return [];
       const { data, error } = await supabase
         .from("specialist_services")
-        .select("specialist_id, specialists(id, name, title, is_active)")
-        .eq("service_id", selectedServiceId);
+        .select("service_id, services(id, name, description, duration_minutes, price)")
+        .eq("specialist_id", selectedSpecialistId);
       if (error) throw error;
-      return (data || [])
-        .map((row: any) => row.specialists)
-        .filter((s: any) => s && s.is_active);
+      return (data || []).map((row: any) => row.services).filter(Boolean);
     },
-    enabled: !!selectedServiceId && open,
+    enabled: !!selectedSpecialistId && open,
   });
 
   // Fetch specialist work hours
