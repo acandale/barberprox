@@ -486,7 +486,9 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">{t("admin.dashboard")}</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              {isSpecialist ? t("nav.specialistPanel") : t("admin.dashboard")}
+            </h1>
             <p className="text-muted-foreground">{t("admin.manageDesc")}</p>
           </div>
         </div>
