@@ -63,7 +63,7 @@ const DAYS_OF_WEEK = [
   "Duminică", "Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă",
 ];
 
-export function SpecialistsManager() {
+export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManagerProps = {}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
