@@ -144,29 +144,34 @@ export default function AdminPage() {
 
   // Fetch blocked times for day view
   const { data: dayBlockedTimes = [] } = useQuery({
-    queryKey: ["admin-day-blocked-times", currentDate.toISOString(), viewMode],
+    queryKey: ["admin-day-blocked-times", currentDate.toISOString(), viewMode, filterSpecialistId],
     queryFn: async () => {
       const startDate = new Date(currentDate);
       startDate.setHours(0, 0, 0, 0);
       const endDate = new Date(currentDate);
       endDate.setHours(23, 59, 59, 999);
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("blocked_times")
         .select("*")
         .gte("start_time", startDate.toISOString())
         .lte("start_time", endDate.toISOString())
         .order("start_time", { ascending: true });
 
+      if (filterSpecialistId) {
+        query = query.eq("specialist_id", filterSpecialistId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
-    enabled: !!user && isAdmin && viewMode === "day",
+    enabled: !!user && (isAdmin || isSpecialist) && viewMode === "day",
   });
 
   // Fetch appointments
   const { data: appointments = [], isLoading } = useQuery({
-    queryKey: ["admin-appointments", currentDate.toISOString(), viewMode],
+    queryKey: ["admin-appointments", currentDate.toISOString(), viewMode, filterSpecialistId],
     queryFn: async () => {
       let startDate: Date;
       let endDate: Date;
@@ -184,7 +189,7 @@ export default function AdminPage() {
         endDate.setHours(23, 59, 59, 999);
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("appointments")
         .select(`
           id,
@@ -204,10 +209,17 @@ export default function AdminPage() {
         .lte("start_time", endDate.toISOString())
         .order("start_time", { ascending: true });
 
+      if (filterSpecialistId) {
+        query = query.eq("specialist_id", filterSpecialistId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       
       // Fetch profiles for all appointments
       const userIds = [...new Set(data?.map(apt => apt.user_id) || [])];
+      if (userIds.length === 0) return [] as AppointmentWithDetails[];
+      
       const { data: profilesData } = await supabase
         .from("profiles")
         .select("id, full_name, email, phone")
@@ -222,7 +234,7 @@ export default function AdminPage() {
         profiles: profilesMap.get(apt.user_id) || null
       })) as AppointmentWithDetails[];
     },
-    enabled: !!user && isAdmin,
+    enabled: !!user && (isAdmin || isSpecialist),
   });
 
   // Cancel appointment mutation
