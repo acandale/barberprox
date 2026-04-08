@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Navbar() {
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin, isSpecialist, signOut } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -90,6 +90,11 @@ export function Navbar() {
                       <Settings className="h-4 w-4" /> {t("nav.adminPanel")}
                     </DropdownMenuItem>
                   )}
+                  {isSpecialist && (
+                    <DropdownMenuItem onClick={() => navigate("/admin")} className="cursor-pointer hover:bg-white/10 gap-2 text-purple-light">
+                      <Settings className="h-4 w-4" /> {t("nav.specialistPanel")}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer hover:bg-red-500/20 text-red-400 gap-2">
                     <LogOut className="h-4 w-4" /> {t("nav.signOut")}
@@ -137,6 +142,11 @@ export function Navbar() {
                   {isAdmin && (
                     <Link to="/admin" className="text-lg font-semibold text-purple-light" onClick={() => setMobileMenuOpen(false)}>
                       <Settings className="h-5 w-5 inline mr-2" /> {t("nav.adminPanel")}
+                    </Link>
+                  )}
+                  {isSpecialist && (
+                    <Link to="/admin" className="text-lg font-semibold text-purple-light" onClick={() => setMobileMenuOpen(false)}>
+                      <Settings className="h-5 w-5 inline mr-2" /> {t("nav.specialistPanel")}
                     </Link>
                   )}
                   <button onClick={handleSignOut} className="text-lg font-semibold text-red-400 text-left flex items-center gap-2 mt-2">
