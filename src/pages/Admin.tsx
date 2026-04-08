@@ -103,10 +103,35 @@ export default function AdminPage() {
     }
   }, [isSpecialist, specialistId]);
 
+  // Fetch specialists for filter dropdown
+  const { data: specialists = [] } = useQuery({
+    queryKey: ["admin-specialists-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("specialists")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && (isAdmin || isSpecialist),
+  });
+
   // Fetch work hours for dynamic calendar range
   const { data: workHours = [] } = useQuery({
-    queryKey: ["admin-work-hours-range"],
+    queryKey: ["admin-work-hours-range", filterSpecialistId],
     queryFn: async () => {
+      // If filtering by specialist, use specialist work hours
+      if (filterSpecialistId) {
+        const { data, error } = await supabase
+          .from("specialist_work_hours")
+          .select("*")
+          .eq("specialist_id", filterSpecialistId)
+          .order("day_of_week", { ascending: true });
+        if (error) throw error;
+        return data;
+      }
       const { data, error } = await supabase
         .from("work_hours")
         .select("*")
@@ -114,7 +139,7 @@ export default function AdminPage() {
       if (error) throw error;
       return data;
     },
-    enabled: !!user && isAdmin,
+    enabled: !!user && (isAdmin || isSpecialist),
   });
 
   // Fetch blocked times for day view
