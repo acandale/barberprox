@@ -37,7 +37,11 @@ interface BlockedTime {
   reason: string | null;
 }
 
-export function BlockedTimesCalendar() {
+interface BlockedTimesCalendarProps {
+  specialistId: string;
+}
+
+export function BlockedTimesCalendar({ specialistId }: BlockedTimesCalendarProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -50,7 +54,7 @@ export function BlockedTimesCalendar() {
   });
 
   const { data: blockedTimes = [], isLoading } = useQuery({
-    queryKey: ["admin-blocked-times-calendar", currentDate.toISOString()],
+    queryKey: ["specialist-blocked-times", specialistId, currentDate.toISOString()],
     queryFn: async () => {
       const startDate = startOfMonth(currentDate);
       const endDate = endOfMonth(currentDate);
@@ -58,6 +62,7 @@ export function BlockedTimesCalendar() {
       const { data, error } = await supabase
         .from("blocked_times")
         .select("*")
+        .eq("specialist_id", specialistId)
         .gte("start_time", startDate.toISOString())
         .lte("start_time", endDate.toISOString())
         .order("start_time", { ascending: true });
@@ -79,18 +84,19 @@ export function BlockedTimesCalendar() {
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
         reason: blockTimeData.reason || null,
+        specialist_id: specialistId,
       });
 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Time blocked successfully" });
+      toast({ title: "Timp blocat cu succes" });
       setBlockTimeDialog(false);
       setBlockTimeData({ startTime: "", endTime: "", reason: "" });
-      queryClient.invalidateQueries({ queryKey: ["admin-blocked-times-calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["specialist-blocked-times", specialistId] });
     },
     onError: () => {
-      toast({ title: "Failed to block time", variant: "destructive" });
+      toast({ title: "Eroare la blocarea timpului", variant: "destructive" });
     },
   });
 
@@ -100,11 +106,11 @@ export function BlockedTimesCalendar() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Blocked time removed" });
-      queryClient.invalidateQueries({ queryKey: ["admin-blocked-times-calendar"] });
+      toast({ title: "Blocaj eliminat" });
+      queryClient.invalidateQueries({ queryKey: ["specialist-blocked-times", specialistId] });
     },
     onError: () => {
-      toast({ title: "Failed to remove blocked time", variant: "destructive" });
+      toast({ title: "Eroare la eliminare", variant: "destructive" });
     },
   });
 
@@ -117,16 +123,12 @@ export function BlockedTimesCalendar() {
     const monthEnd = endOfMonth(currentDate);
     const calendarStart = startOfWeek(monthStart);
     const calendarEnd = endOfWeek(monthEnd);
-
     const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
     return (
       <div className="grid grid-cols-7 gap-1">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div
-            key={day}
-            className="p-2 text-center text-sm font-medium text-muted-foreground"
-          >
+        {["Du", "Lu", "Ma", "Mi", "Jo", "Vi", "Sâ"].map((day) => (
+          <div key={day} className="p-1 text-center text-xs font-medium text-muted-foreground">
             {day}
           </div>
         ))}
@@ -140,36 +142,24 @@ export function BlockedTimesCalendar() {
             <div
               key={day.toISOString()}
               className={cn(
-                "min-h-[80px] p-2 border rounded-lg transition-colors cursor-pointer hover:bg-muted/50",
+                "min-h-[60px] p-1 border rounded-lg transition-colors cursor-pointer hover:bg-muted/50 text-xs",
                 isCurrentMonth ? "bg-card" : "bg-muted/30",
                 isToday && "ring-2 ring-purple",
                 isSelected && "bg-purple/10"
               )}
               onClick={() => setSelectedDay(day)}
             >
-              <div
-                className={cn(
-                  "text-sm font-medium mb-1",
-                  !isCurrentMonth && "text-muted-foreground"
-                )}
-              >
+              <div className={cn("font-medium mb-0.5", !isCurrentMonth && "text-muted-foreground")}>
                 {format(day, "d")}
               </div>
-              <div className="space-y-1">
-                {dayBlockedTimes.slice(0, 2).map((bt) => (
-                  <div
-                    key={bt.id}
-                    className="text-xs p-1 rounded bg-red-100 text-red-700 truncate"
-                  >
-                    {format(parseISO(bt.start_time), "HH:mm")} - {format(parseISO(bt.end_time), "HH:mm")}
-                  </div>
-                ))}
-                {dayBlockedTimes.length > 2 && (
-                  <div className="text-xs text-muted-foreground">
-                    +{dayBlockedTimes.length - 2} more
-                  </div>
-                )}
-              </div>
+              {dayBlockedTimes.slice(0, 1).map((bt) => (
+                <div key={bt.id} className="p-0.5 rounded bg-red-100 text-red-700 truncate text-[10px]">
+                  {format(parseISO(bt.start_time), "HH:mm")}
+                </div>
+              ))}
+              {dayBlockedTimes.length > 1 && (
+                <div className="text-[10px] text-muted-foreground">+{dayBlockedTimes.length - 1}</div>
+              )}
             </div>
           );
         })}
@@ -181,180 +171,92 @@ export function BlockedTimesCalendar() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-purple" />
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-purple" />
       </div>
     );
   }
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
-      {/* Calendar */}
-      <Card variant="elevated" className="lg:col-span-2">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Blocked Time Slots</CardTitle>
-              <CardDescription>
-                Block specific times to prevent customer bookings
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm font-medium min-w-[120px] text-center">
-                {format(currentDate, "MMMM yyyy")}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>{renderCalendar()}</CardContent>
-      </Card>
+    <div className="space-y-4">
+      {/* Calendar header */}
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="text-sm font-medium">{format(currentDate, "MMMM yyyy")}</span>
+        <Button variant="ghost" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
 
-      {/* Selected Day Details */}
-      <Card variant="elevated">
-        <CardHeader>
-          <CardTitle className="text-lg">
-            {selectedDay
-              ? format(selectedDay, "EEEE, MMM d")
-              : "Select a Day"}
-          </CardTitle>
-          <CardDescription>
-            {selectedDay
-              ? "Manage blocked times for this day"
-              : "Click on a day to view or add blocked times"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {selectedDay ? (
-            <div className="space-y-4">
-              {/* Add Block Time Button */}
-              <Dialog open={blockTimeDialog} onOpenChange={setBlockTimeDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full">
-                    <Plus className="h-4 w-4" />
-                    Block Time Slot
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Block Time</DialogTitle>
-                    <DialogDescription>
-                      Block off time for {format(selectedDay, "MMMM d, yyyy")}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Start Time</Label>
-                        <Input
-                          type="time"
-                          value={blockTimeData.startTime}
-                          onChange={(e) =>
-                            setBlockTimeData({ ...blockTimeData, startTime: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>End Time</Label>
-                        <Input
-                          type="time"
-                          value={blockTimeData.endTime}
-                          onChange={(e) =>
-                            setBlockTimeData({ ...blockTimeData, endTime: e.target.value })
-                          }
-                        />
-                      </div>
+      {renderCalendar()}
+
+      {/* Selected day details */}
+      {selectedDay ? (
+        <div className="space-y-3 pt-3 border-t">
+          <div className="flex items-center justify-between">
+            <p className="font-medium text-sm">{format(selectedDay, "EEEE, d MMM")}</p>
+            <Dialog open={blockTimeDialog} onOpenChange={setBlockTimeDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Plus className="h-3 w-3" /> Blochează
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Blochează timp</DialogTitle>
+                  <DialogDescription>
+                    Blochează un interval pentru {format(selectedDay, "d MMMM yyyy")}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Ora început</Label>
+                      <Input type="time" value={blockTimeData.startTime} onChange={(e) => setBlockTimeData({ ...blockTimeData, startTime: e.target.value })} />
                     </div>
                     <div>
-                      <Label>Reason (optional)</Label>
-                      <Input
-                        value={blockTimeData.reason}
-                        onChange={(e) =>
-                          setBlockTimeData({ ...blockTimeData, reason: e.target.value })
-                        }
-                        placeholder="e.g., Lunch break, Personal"
-                      />
+                      <Label>Ora sfârșit</Label>
+                      <Input type="time" value={blockTimeData.endTime} onChange={(e) => setBlockTimeData({ ...blockTimeData, endTime: e.target.value })} />
                     </div>
-                    <Button
-                      className="w-full"
-                      variant="hero"
-                      onClick={() => blockTimeMutation.mutate()}
-                      disabled={
-                        !blockTimeData.startTime ||
-                        !blockTimeData.endTime ||
-                        blockTimeMutation.isPending
-                      }
-                    >
-                      {blockTimeMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Block Time"
-                      )}
-                    </Button>
                   </div>
-                </DialogContent>
-              </Dialog>
-
-              {/* List of Blocked Times */}
-              {selectedDayBlockedTimes.length > 0 ? (
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Blocked Times</Label>
-                  {selectedDayBlockedTimes.map((bt) => (
-                    <div
-                      key={bt.id}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-red-50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Clock className="h-4 w-4 text-red-600" />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {format(parseISO(bt.start_time), "h:mm a")} -{" "}
-                            {format(parseISO(bt.end_time), "h:mm a")}
-                          </p>
-                          {bt.reason && (
-                            <p className="text-xs text-muted-foreground">{bt.reason}</p>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-100"
-                        onClick={() => deleteMutation.mutate(bt.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                  <div>
+                    <Label>Motiv (opțional)</Label>
+                    <Input value={blockTimeData.reason} onChange={(e) => setBlockTimeData({ ...blockTimeData, reason: e.target.value })} placeholder="ex: Pauză de masă" />
+                  </div>
+                  <Button className="w-full" variant="hero" onClick={() => blockTimeMutation.mutate()} disabled={!blockTimeData.startTime || !blockTimeData.endTime || blockTimeMutation.isPending}>
+                    {blockTimeMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Blochează"}
+                  </Button>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No blocked times for this day
-                </p>
-              )}
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {selectedDayBlockedTimes.length > 0 ? (
+            <div className="space-y-2">
+              {selectedDayBlockedTimes.map((bt) => (
+                <div key={bt.id} className="flex items-center justify-between p-2 rounded-lg border bg-red-50 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-red-600" />
+                    <span className="font-medium">
+                      {format(parseISO(bt.start_time), "HH:mm")} - {format(parseISO(bt.end_time), "HH:mm")}
+                    </span>
+                    {bt.reason && <span className="text-xs text-muted-foreground">• {bt.reason}</span>}
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600" onClick={() => deleteMutation.mutate(bt.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Select a day from the calendar</p>
-            </div>
+            <p className="text-xs text-muted-foreground text-center py-2">Nicio blocare pentru această zi</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground text-center py-2">Selectează o zi din calendar</p>
+      )}
     </div>
   );
 }
