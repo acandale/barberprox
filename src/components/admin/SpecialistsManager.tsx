@@ -35,6 +35,11 @@ interface Specialist {
   name: string;
   title: string;
   is_active: boolean;
+  user_id: string | null;
+}
+
+interface SpecialistsManagerProps {
+  restrictToSpecialistId?: string | null;
 }
 
 interface SpecialistWorkHour {
