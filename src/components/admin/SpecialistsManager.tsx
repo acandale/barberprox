@@ -559,6 +559,14 @@ export function SpecialistsManager() {
                   )}
                 </div>
               </TabsContent>
+
+              <TabsContent value="blocked-times">
+                <BlockedTimesCalendar specialistId={selectedSpecialist.id} />
+              </TabsContent>
+
+              <TabsContent value="vacations">
+                <VacationsManager specialistId={selectedSpecialist.id} />
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
