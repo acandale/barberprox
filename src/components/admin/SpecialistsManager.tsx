@@ -402,60 +402,65 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
 
   return (
     <div className="space-y-6">
-      {/* Specialists List */}
-      <Card variant="elevated">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Specialiști</CardTitle>
-            <CardDescription>Gestionează specialiștii salonului</CardDescription>
-          </div>
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Adaugă specialist
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {specialists.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              Niciun specialist adăugat încă. Adaugă primul specialist.
-            </p>
-          ) : (
-            <div className="grid gap-3">
-              {specialists.map((s) => (
-                <div
-                  key={s.id}
-                  className={cn(
-                    "flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all",
-                    selectedSpecialistId === s.id ? "ring-2 ring-purple bg-purple/5" : "bg-card hover:bg-muted/50"
-                  )}
-                  onClick={() => setSelectedSpecialistId(s.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center text-purple font-semibold">
-                      {s.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium">{s.name}</p>
-                      <p className="text-sm text-muted-foreground">{s.title || "Specialist"}</p>
-                    </div>
-                    {!s.is_active && (
-                      <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">Inactiv</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(s); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteId(s.id); }}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+      {/* Specialists List - hidden for restricted specialist */}
+      {!restrictToSpecialistId && (
+        <Card variant="elevated">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Specialiști</CardTitle>
+              <CardDescription>Gestionează specialiștii salonului</CardDescription>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Adaugă specialist
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {specialists.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                Niciun specialist adăugat încă. Adaugă primul specialist.
+              </p>
+            ) : (
+              <div className="grid gap-3">
+                {specialists.map((s) => (
+                  <div
+                    key={s.id}
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all",
+                      selectedSpecialistId === s.id ? "ring-2 ring-purple bg-purple/5" : "bg-card hover:bg-muted/50"
+                    )}
+                    onClick={() => setSelectedSpecialistId(s.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center text-purple font-semibold">
+                        {s.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-medium">{s.name}</p>
+                        <p className="text-sm text-muted-foreground">{s.title || "Specialist"}</p>
+                      </div>
+                      {!s.is_active && (
+                        <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">Inactiv</span>
+                      )}
+                      {s.user_id && (
+                        <span className="text-xs bg-purple/10 text-purple px-2 py-1 rounded-full">Cont asociat</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(s); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteId(s.id); }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Selected Specialist Config */}
       {selectedSpecialist && (
