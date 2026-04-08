@@ -77,7 +77,7 @@ type ViewMode = "month" | "week" | "day";
 type AdminTab = "appointments" | "work-hours" | "settings" | "specialists";
 
 export default function AdminPage() {
-  const { user, isAdmin, isLoading: authLoading } = useAuth();
+  const { user, isAdmin, isSpecialist, specialistId, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,12 +88,20 @@ export default function AdminPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
   const [bookDialogOpen, setBookDialogOpen] = useState(false);
+  const [filterSpecialistId, setFilterSpecialistId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
+    if (!authLoading && (!user || (!isAdmin && !isSpecialist))) {
       navigate("/dashboard");
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, isAdmin, isSpecialist, authLoading, navigate]);
+
+  // If specialist, auto-set filter to own specialist
+  useEffect(() => {
+    if (isSpecialist && specialistId) {
+      setFilterSpecialistId(specialistId);
+    }
+  }, [isSpecialist, specialistId]);
 
   // Fetch work hours for dynamic calendar range
   const { data: workHours = [] } = useQuery({
