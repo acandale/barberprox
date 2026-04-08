@@ -635,7 +635,7 @@ export default function AdminPage() {
 
           {/* Specialists Tab */}
           <TabsContent value="specialists">
-            <SpecialistsManager />
+            <SpecialistsManager restrictToSpecialistId={isSpecialist ? specialistId : undefined} />
           </TabsContent>
 
 
