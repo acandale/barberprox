@@ -37,14 +37,10 @@ import {
   Calendar,
   X,
   Settings,
-  CalendarOff,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { WorkHoursManager } from "@/components/admin/WorkHoursManager";
-import { BlockedTimesCalendar } from "@/components/admin/BlockedTimesCalendar";
-
-import { VacationsManager } from "@/components/admin/VacationsManager";
 import { AdminBookAppointment } from "@/components/admin/AdminBookAppointment";
 import { SalonSettingsManager } from "@/components/admin/SalonSettingsManager";
 import { SpecialistsManager } from "@/components/admin/SpecialistsManager";
