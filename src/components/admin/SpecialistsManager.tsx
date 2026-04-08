@@ -172,7 +172,7 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     mutationFn: async () => {
       const { data: specialist, error } = await supabase
         .from("specialists")
-        .insert({ name: formName, title: formTitle, is_active: formActive })
+        .insert({ name: formName, title: formTitle, is_active: formActive, user_id: formUserId || null })
         .select()
         .single();
       if (error) throw error;
