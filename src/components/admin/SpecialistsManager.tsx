@@ -76,7 +76,6 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<string | null>(restrictToSpecialistId || null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [editedWorkHours, setEditedWorkHours] = useState<Record<number, Partial<SpecialistWorkHour>>>({});
 
   // Service CRUD state
