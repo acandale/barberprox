@@ -531,14 +531,32 @@ export default function AdminPage() {
               <CardContent className="py-4">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => setBookDialogOpen(true)}
-                    >
-                      <Calendar className="h-4 w-4" />
-                      New Appointment
-                    </Button>
+                    {isAdmin && (
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => setBookDialogOpen(true)}
+                        >
+                          <Calendar className="h-4 w-4" />
+                          New Appointment
+                        </Button>
+                        <Select
+                          value={filterSpecialistId || "all"}
+                          onValueChange={(v) => setFilterSpecialistId(v === "all" ? null : v)}
+                        >
+                          <SelectTrigger className="w-[200px] h-9">
+                            <SelectValue placeholder="Toți specialiștii" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Toți specialiștii</SelectItem>
+                            {specialists.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
