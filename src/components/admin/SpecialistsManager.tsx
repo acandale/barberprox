@@ -72,8 +72,10 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
   const [formName, setFormName] = useState("");
   const [formTitle, setFormTitle] = useState("");
   const [formActive, setFormActive] = useState(true);
+  const [formUserId, setFormUserId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [selectedSpecialistId, setSelectedSpecialistId] = useState<string | null>(null);
+  const [selectedSpecialistId, setSelectedSpecialistId] = useState<string | null>(restrictToSpecialistId || null);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [editedWorkHours, setEditedWorkHours] = useState<Record<number, Partial<SpecialistWorkHour>>>({});
 
