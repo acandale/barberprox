@@ -199,7 +199,7 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
       if (!editingSpecialist) return;
       const { error } = await supabase
         .from("specialists")
-        .update({ name: formName, title: formTitle, is_active: formActive })
+        .update({ name: formName, title: formTitle, is_active: formActive, user_id: formUserId || null })
         .eq("id", editingSpecialist.id);
       if (error) throw error;
     },
@@ -337,10 +337,11 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     setFormName("");
     setFormTitle("");
     setFormActive(true);
+    setFormUserId(null);
   };
 
   const openCreate = () => {
-    setFormName(""); setFormTitle(""); setFormActive(true);
+    setFormName(""); setFormTitle(""); setFormActive(true); setFormUserId(null);
     setEditingSpecialist(null);
     setDialogOpen(true);
   };
