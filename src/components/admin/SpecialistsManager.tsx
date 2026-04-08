@@ -27,6 +27,7 @@ import {
 import { Loader2, Plus, Pencil, Trash2, Save, Clock, Scissors, CalendarOff, Palmtree } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BlockedTimesCalendar } from "./BlockedTimesCalendar";
 import { VacationsManager } from "./VacationsManager";
 
@@ -35,6 +36,11 @@ interface Specialist {
   name: string;
   title: string;
   is_active: boolean;
+  user_id: string | null;
+}
+
+interface SpecialistsManagerProps {
+  restrictToSpecialistId?: string | null;
 }
 
 interface SpecialistWorkHour {
@@ -58,7 +64,7 @@ const DAYS_OF_WEEK = [
   "Duminică", "Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă",
 ];
 
-export function SpecialistsManager() {
+export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManagerProps = {}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -67,8 +73,9 @@ export function SpecialistsManager() {
   const [formName, setFormName] = useState("");
   const [formTitle, setFormTitle] = useState("");
   const [formActive, setFormActive] = useState(true);
+  const [formUserId, setFormUserId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [selectedSpecialistId, setSelectedSpecialistId] = useState<string | null>(null);
+  const [selectedSpecialistId, setSelectedSpecialistId] = useState<string | null>(restrictToSpecialistId || null);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [editedWorkHours, setEditedWorkHours] = useState<Record<number, Partial<SpecialistWorkHour>>>({});
 
@@ -90,6 +97,27 @@ export function SpecialistsManager() {
       return data as Specialist[];
     },
   });
+
+  // Fetch all profiles for user assignment (admin only)
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ["admin-all-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !restrictToSpecialistId,
+  });
+
+  // Auto-select restricted specialist
+  useEffect(() => {
+    if (restrictToSpecialistId && specialists.length > 0) {
+      setSelectedSpecialistId(restrictToSpecialistId);
+    }
+  }, [restrictToSpecialistId, specialists]);
 
   // Fetch all services
   const { data: services = [] } = useQuery({
@@ -145,7 +173,7 @@ export function SpecialistsManager() {
     mutationFn: async () => {
       const { data: specialist, error } = await supabase
         .from("specialists")
-        .insert({ name: formName, title: formTitle, is_active: formActive })
+        .insert({ name: formName, title: formTitle, is_active: formActive, user_id: formUserId || null })
         .select()
         .single();
       if (error) throw error;
@@ -158,6 +186,11 @@ export function SpecialistsManager() {
       }));
       const { error: whError } = await supabase.from("specialist_work_hours").insert(workHoursRows);
       if (whError) throw whError;
+      
+      // Set user role to specialist if user assigned
+      if (formUserId) {
+        await supabase.from("user_roles").update({ role: "specialist" as any }).eq("user_id", formUserId);
+      }
     },
     onSuccess: () => {
       toast({ title: "Specialist adăugat cu succes" });
@@ -172,9 +205,18 @@ export function SpecialistsManager() {
       if (!editingSpecialist) return;
       const { error } = await supabase
         .from("specialists")
-        .update({ name: formName, title: formTitle, is_active: formActive })
+        .update({ name: formName, title: formTitle, is_active: formActive, user_id: formUserId || null })
         .eq("id", editingSpecialist.id);
       if (error) throw error;
+      
+      // Update role for old user (revert to client)
+      if (editingSpecialist.user_id && editingSpecialist.user_id !== formUserId) {
+        await supabase.from("user_roles").update({ role: "client" as any }).eq("user_id", editingSpecialist.user_id);
+      }
+      // Set role for new user
+      if (formUserId && formUserId !== editingSpecialist.user_id) {
+        await supabase.from("user_roles").update({ role: "specialist" as any }).eq("user_id", formUserId);
+      }
     },
     onSuccess: () => {
       toast({ title: "Specialist actualizat" });
@@ -310,16 +352,17 @@ export function SpecialistsManager() {
     setFormName("");
     setFormTitle("");
     setFormActive(true);
+    setFormUserId(null);
   };
 
   const openCreate = () => {
-    setFormName(""); setFormTitle(""); setFormActive(true);
+    setFormName(""); setFormTitle(""); setFormActive(true); setFormUserId(null);
     setEditingSpecialist(null);
     setDialogOpen(true);
   };
 
   const openEdit = (s: Specialist) => {
-    setFormName(s.name); setFormTitle(s.title); setFormActive(s.is_active);
+    setFormName(s.name); setFormTitle(s.title); setFormActive(s.is_active); setFormUserId(s.user_id || null);
     setEditingSpecialist(s);
     setDialogOpen(true);
   };
@@ -373,60 +416,65 @@ export function SpecialistsManager() {
 
   return (
     <div className="space-y-6">
-      {/* Specialists List */}
-      <Card variant="elevated">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Specialiști</CardTitle>
-            <CardDescription>Gestionează specialiștii salonului</CardDescription>
-          </div>
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Adaugă specialist
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {specialists.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              Niciun specialist adăugat încă. Adaugă primul specialist.
-            </p>
-          ) : (
-            <div className="grid gap-3">
-              {specialists.map((s) => (
-                <div
-                  key={s.id}
-                  className={cn(
-                    "flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all",
-                    selectedSpecialistId === s.id ? "ring-2 ring-purple bg-purple/5" : "bg-card hover:bg-muted/50"
-                  )}
-                  onClick={() => setSelectedSpecialistId(s.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center text-purple font-semibold">
-                      {s.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium">{s.name}</p>
-                      <p className="text-sm text-muted-foreground">{s.title || "Specialist"}</p>
-                    </div>
-                    {!s.is_active && (
-                      <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">Inactiv</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(s); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteId(s.id); }}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+      {/* Specialists List - hidden for restricted specialist */}
+      {!restrictToSpecialistId && (
+        <Card variant="elevated">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Specialiști</CardTitle>
+              <CardDescription>Gestionează specialiștii salonului</CardDescription>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              Adaugă specialist
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {specialists.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                Niciun specialist adăugat încă. Adaugă primul specialist.
+              </p>
+            ) : (
+              <div className="grid gap-3">
+                {specialists.map((s) => (
+                  <div
+                    key={s.id}
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all",
+                      selectedSpecialistId === s.id ? "ring-2 ring-purple bg-purple/5" : "bg-card hover:bg-muted/50"
+                    )}
+                    onClick={() => setSelectedSpecialistId(s.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple/10 flex items-center justify-center text-purple font-semibold">
+                        {s.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-medium">{s.name}</p>
+                        <p className="text-sm text-muted-foreground">{s.title || "Specialist"}</p>
+                      </div>
+                      {!s.is_active && (
+                        <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">Inactiv</span>
+                      )}
+                      {s.user_id && (
+                        <span className="text-xs bg-purple/10 text-purple px-2 py-1 rounded-full">Cont asociat</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(s); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteId(s.id); }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Selected Specialist Config */}
       {selectedSpecialist && (
@@ -591,6 +639,23 @@ export function SpecialistsManager() {
               <Switch checked={formActive} onCheckedChange={setFormActive} />
               <Label>Activ</Label>
             </div>
+            {!restrictToSpecialistId && (
+              <div className="space-y-2">
+                <Label>Cont utilizator asociat</Label>
+                <Select value={formUserId || "none"} onValueChange={(v) => setFormUserId(v === "none" ? null : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Fără cont asociat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Fără cont asociat</SelectItem>
+                    {allProfiles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.full_name} ({p.email})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Asociază un cont existent pentru a permite acces de specialist</p>
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="ghost" onClick={closeDialog}>Anulează</Button>
               <Button

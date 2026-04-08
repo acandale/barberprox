@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -77,7 +78,7 @@ type ViewMode = "month" | "week" | "day";
 type AdminTab = "appointments" | "work-hours" | "settings" | "specialists";
 
 export default function AdminPage() {
-  const { user, isAdmin, isLoading: authLoading } = useAuth();
+  const { user, isAdmin, isSpecialist, specialistId, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,17 +89,50 @@ export default function AdminPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
   const [bookDialogOpen, setBookDialogOpen] = useState(false);
+  const [filterSpecialistId, setFilterSpecialistId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
+    if (!authLoading && (!user || (!isAdmin && !isSpecialist))) {
       navigate("/dashboard");
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, isAdmin, isSpecialist, authLoading, navigate]);
+
+  // If specialist, auto-set filter to own specialist
+  useEffect(() => {
+    if (isSpecialist && specialistId) {
+      setFilterSpecialistId(specialistId);
+    }
+  }, [isSpecialist, specialistId]);
+
+  // Fetch specialists for filter dropdown
+  const { data: specialists = [] } = useQuery({
+    queryKey: ["admin-specialists-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("specialists")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && (isAdmin || isSpecialist),
+  });
 
   // Fetch work hours for dynamic calendar range
   const { data: workHours = [] } = useQuery({
-    queryKey: ["admin-work-hours-range"],
+    queryKey: ["admin-work-hours-range", filterSpecialistId],
     queryFn: async () => {
+      // If filtering by specialist, use specialist work hours
+      if (filterSpecialistId) {
+        const { data, error } = await supabase
+          .from("specialist_work_hours")
+          .select("*")
+          .eq("specialist_id", filterSpecialistId)
+          .order("day_of_week", { ascending: true });
+        if (error) throw error;
+        return data;
+      }
       const { data, error } = await supabase
         .from("work_hours")
         .select("*")
@@ -106,34 +140,39 @@ export default function AdminPage() {
       if (error) throw error;
       return data;
     },
-    enabled: !!user && isAdmin,
+    enabled: !!user && (isAdmin || isSpecialist),
   });
 
   // Fetch blocked times for day view
   const { data: dayBlockedTimes = [] } = useQuery({
-    queryKey: ["admin-day-blocked-times", currentDate.toISOString(), viewMode],
+    queryKey: ["admin-day-blocked-times", currentDate.toISOString(), viewMode, filterSpecialistId],
     queryFn: async () => {
       const startDate = new Date(currentDate);
       startDate.setHours(0, 0, 0, 0);
       const endDate = new Date(currentDate);
       endDate.setHours(23, 59, 59, 999);
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("blocked_times")
         .select("*")
         .gte("start_time", startDate.toISOString())
         .lte("start_time", endDate.toISOString())
         .order("start_time", { ascending: true });
 
+      if (filterSpecialistId) {
+        query = query.eq("specialist_id", filterSpecialistId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
-    enabled: !!user && isAdmin && viewMode === "day",
+    enabled: !!user && (isAdmin || isSpecialist) && viewMode === "day",
   });
 
   // Fetch appointments
   const { data: appointments = [], isLoading } = useQuery({
-    queryKey: ["admin-appointments", currentDate.toISOString(), viewMode],
+    queryKey: ["admin-appointments", currentDate.toISOString(), viewMode, filterSpecialistId],
     queryFn: async () => {
       let startDate: Date;
       let endDate: Date;
@@ -151,7 +190,7 @@ export default function AdminPage() {
         endDate.setHours(23, 59, 59, 999);
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("appointments")
         .select(`
           id,
@@ -171,10 +210,17 @@ export default function AdminPage() {
         .lte("start_time", endDate.toISOString())
         .order("start_time", { ascending: true });
 
+      if (filterSpecialistId) {
+        query = query.eq("specialist_id", filterSpecialistId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       
       // Fetch profiles for all appointments
       const userIds = [...new Set(data?.map(apt => apt.user_id) || [])];
+      if (userIds.length === 0) return [] as AppointmentWithDetails[];
+      
       const { data: profilesData } = await supabase
         .from("profiles")
         .select("id, full_name, email, phone")
@@ -189,7 +235,7 @@ export default function AdminPage() {
         profiles: profilesMap.get(apt.user_id) || null
       })) as AppointmentWithDetails[];
     },
-    enabled: !!user && isAdmin,
+    enabled: !!user && (isAdmin || isSpecialist),
   });
 
   // Cancel appointment mutation
@@ -440,7 +486,9 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">{t("admin.dashboard")}</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              {isSpecialist ? t("nav.specialistPanel") : t("admin.dashboard")}
+            </h1>
             <p className="text-muted-foreground">{t("admin.manageDesc")}</p>
           </div>
         </div>
@@ -452,18 +500,30 @@ export default function AdminPage() {
               <Calendar className="h-4 w-4" />
               {t("admin.appointments")}
             </TabsTrigger>
-            <TabsTrigger value="specialists" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Specialiști
-            </TabsTrigger>
-            <TabsTrigger value="work-hours" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              {t("admin.workHours")}
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              {t("admin.settings")}
-            </TabsTrigger>
+            {isAdmin && (
+              <>
+                <TabsTrigger value="specialists" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Specialiști
+                </TabsTrigger>
+                <TabsTrigger value="work-hours" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  {t("admin.workHours")}
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  {t("admin.settings")}
+                </TabsTrigger>
+              </>
+            )}
+            {isSpecialist && (
+              <>
+                <TabsTrigger value="specialists" className="flex items-center gap-2">
+                  <Scissors className="h-4 w-4" />
+                  {t("admin.myConfig")}
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           {/* Appointments Tab */}
@@ -473,14 +533,32 @@ export default function AdminPage() {
               <CardContent className="py-4">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => setBookDialogOpen(true)}
-                    >
-                      <Calendar className="h-4 w-4" />
-                      New Appointment
-                    </Button>
+                    {isAdmin && (
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => setBookDialogOpen(true)}
+                        >
+                          <Calendar className="h-4 w-4" />
+                          New Appointment
+                        </Button>
+                        <Select
+                          value={filterSpecialistId || "all"}
+                          onValueChange={(v) => setFilterSpecialistId(v === "all" ? null : v)}
+                        >
+                          <SelectTrigger className="w-[200px] h-9">
+                            <SelectValue placeholder="Toți specialiștii" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Toți specialiștii</SelectItem>
+                            {specialists.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -559,7 +637,7 @@ export default function AdminPage() {
 
           {/* Specialists Tab */}
           <TabsContent value="specialists">
-            <SpecialistsManager />
+            <SpecialistsManager restrictToSpecialistId={isSpecialist ? specialistId : undefined} />
           </TabsContent>
 
 
