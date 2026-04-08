@@ -74,6 +74,7 @@ export type Database = {
           end_date: string
           id: string
           reason: string | null
+          specialist_id: string | null
           start_date: string
         }
         Insert: {
@@ -81,6 +82,7 @@ export type Database = {
           end_date: string
           id?: string
           reason?: string | null
+          specialist_id?: string | null
           start_date: string
         }
         Update: {
@@ -88,9 +90,18 @@ export type Database = {
           end_date?: string
           id?: string
           reason?: string | null
+          specialist_id?: string | null
           start_date?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "blocked_days_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "specialists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       blocked_times: {
         Row: {
@@ -98,6 +109,7 @@ export type Database = {
           end_time: string
           id: string
           reason: string | null
+          specialist_id: string | null
           start_time: string
         }
         Insert: {
@@ -105,6 +117,7 @@ export type Database = {
           end_time: string
           id?: string
           reason?: string | null
+          specialist_id?: string | null
           start_time: string
         }
         Update: {
@@ -112,9 +125,18 @@ export type Database = {
           end_time?: string
           id?: string
           reason?: string | null
+          specialist_id?: string | null
           start_time?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "blocked_times_specialist_id_fkey"
+            columns: ["specialist_id"]
+            isOneToOne: false
+            referencedRelation: "specialists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       otp_verifications: {
         Row: {
