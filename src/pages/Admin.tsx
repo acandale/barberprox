@@ -498,18 +498,30 @@ export default function AdminPage() {
               <Calendar className="h-4 w-4" />
               {t("admin.appointments")}
             </TabsTrigger>
-            <TabsTrigger value="specialists" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Specialiști
-            </TabsTrigger>
-            <TabsTrigger value="work-hours" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              {t("admin.workHours")}
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              {t("admin.settings")}
-            </TabsTrigger>
+            {isAdmin && (
+              <>
+                <TabsTrigger value="specialists" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Specialiști
+                </TabsTrigger>
+                <TabsTrigger value="work-hours" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  {t("admin.workHours")}
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  {t("admin.settings")}
+                </TabsTrigger>
+              </>
+            )}
+            {isSpecialist && (
+              <>
+                <TabsTrigger value="specialists" className="flex items-center gap-2">
+                  <Scissors className="h-4 w-4" />
+                  {t("admin.myConfig")}
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           {/* Appointments Tab */}
