@@ -24,9 +24,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Plus, Pencil, Trash2, Save, Clock, Scissors } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Save, Clock, Scissors, CalendarOff, Palmtree } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BlockedTimesCalendar } from "./BlockedTimesCalendar";
+import { VacationsManager } from "./VacationsManager";
 
 interface Specialist {
   id: string;
@@ -435,7 +437,7 @@ export function SpecialistsManager() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="services">
-              <TabsList className="mb-4">
+              <TabsList className="mb-4 flex-wrap h-auto gap-1">
                 <TabsTrigger value="services" className="flex items-center gap-2">
                   <Scissors className="h-4 w-4" />
                   Servicii
@@ -443,6 +445,14 @@ export function SpecialistsManager() {
                 <TabsTrigger value="schedule" className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   Program
+                </TabsTrigger>
+                <TabsTrigger value="blocked-times" className="flex items-center gap-2">
+                  <CalendarOff className="h-4 w-4" />
+                  Blocări timp
+                </TabsTrigger>
+                <TabsTrigger value="vacations" className="flex items-center gap-2">
+                  <Palmtree className="h-4 w-4" />
+                  Vacanțe
                 </TabsTrigger>
               </TabsList>
 
