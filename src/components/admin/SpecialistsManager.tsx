@@ -97,6 +97,27 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     },
   });
 
+  // Fetch all profiles for user assignment (admin only)
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ["admin-all-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !restrictToSpecialistId,
+  });
+
+  // Auto-select restricted specialist
+  useEffect(() => {
+    if (restrictToSpecialistId && specialists.length > 0) {
+      setSelectedSpecialistId(restrictToSpecialistId);
+    }
+  }, [restrictToSpecialistId, specialists]);
+
   // Fetch all services
   const { data: services = [] } = useQuery({
     queryKey: ["admin-services"],
