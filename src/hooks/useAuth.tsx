@@ -15,6 +15,8 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isSpecialist: boolean;
+  specialistId: string | null;
   isLoading: boolean;
   signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: Error | null; data: { user: User | null } | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null; data: { user: User | null } | null }>;
@@ -29,6 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSpecialist, setIsSpecialist] = useState(false);
+  const [specialistId, setSpecialistId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
@@ -49,6 +53,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
 
     setIsAdmin(roleData?.role === "admin");
+    setIsSpecialist(roleData?.role === "specialist");
+
+    // If specialist, fetch their specialist_id
+    if (roleData?.role === "specialist") {
+      const { data: specData } = await supabase
+        .from("specialists")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+      setSpecialistId(specData?.id || null);
+    } else {
+      setSpecialistId(null);
+    }
   };
 
   const refreshProfile = async () => {
@@ -69,6 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
         setIsAdmin(false);
+        setIsSpecialist(false);
+        setSpecialistId(null);
       }
       
       setIsLoading(false);
@@ -121,11 +140,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Sign out error:", error);
     }
-    // Always clear local state regardless of API result
     setUser(null);
     setSession(null);
     setProfile(null);
     setIsAdmin(false);
+    setIsSpecialist(false);
+    setSpecialistId(null);
   };
 
   return (
@@ -135,6 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         isAdmin,
+        isSpecialist,
+        specialistId,
         isLoading,
         signUp,
         signIn,
