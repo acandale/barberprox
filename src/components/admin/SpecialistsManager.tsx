@@ -27,6 +27,7 @@ import {
 import { Loader2, Plus, Pencil, Trash2, Save, Clock, Scissors, CalendarOff, Palmtree } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BlockedTimesCalendar } from "./BlockedTimesCalendar";
 import { VacationsManager } from "./VacationsManager";
 
