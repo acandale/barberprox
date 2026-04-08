@@ -78,7 +78,7 @@ const SERVICE_COLORS: Record<string, string> = {
 };
 
 type ViewMode = "month" | "week" | "day";
-type AdminTab = "appointments" | "work-hours" | "blocked-times" | "vacations" | "settings" | "specialists";
+type AdminTab = "appointments" | "work-hours" | "settings" | "specialists";
 
 export default function AdminPage() {
   const { user, isAdmin, isLoading: authLoading } = useAuth();
@@ -464,14 +464,6 @@ export default function AdminPage() {
               <Settings className="h-4 w-4" />
               {t("admin.workHours")}
             </TabsTrigger>
-            <TabsTrigger value="blocked-times" className="flex items-center gap-2">
-              <CalendarOff className="h-4 w-4" />
-              {t("admin.blockTimes")}
-            </TabsTrigger>
-            <TabsTrigger value="vacations" className="flex items-center gap-2">
-              <CalendarOff className="h-4 w-4" />
-              {t("admin.vacations")}
-            </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               {t("admin.settings")}
@@ -580,15 +572,6 @@ export default function AdminPage() {
             <WorkHoursManager />
           </TabsContent>
 
-          {/* Blocked Times Tab */}
-          <TabsContent value="blocked-times">
-            <BlockedTimesCalendar />
-          </TabsContent>
-
-          {/* Vacations Tab */}
-          <TabsContent value="vacations">
-            <VacationsManager />
-          </TabsContent>
 
           {/* Settings Tab */}
           <TabsContent value="settings">
