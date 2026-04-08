@@ -625,6 +625,23 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
               <Switch checked={formActive} onCheckedChange={setFormActive} />
               <Label>Activ</Label>
             </div>
+            {!restrictToSpecialistId && (
+              <div className="space-y-2">
+                <Label>Cont utilizator asociat</Label>
+                <Select value={formUserId || "none"} onValueChange={(v) => setFormUserId(v === "none" ? null : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Fără cont asociat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Fără cont asociat</SelectItem>
+                    {allProfiles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.full_name} ({p.email})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Asociază un cont existent pentru a permite acces de specialist</p>
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="ghost" onClick={closeDialog}>Anulează</Button>
               <Button
