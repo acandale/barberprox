@@ -347,7 +347,7 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
   };
 
   const openEdit = (s: Specialist) => {
-    setFormName(s.name); setFormTitle(s.title); setFormActive(s.is_active);
+    setFormName(s.name); setFormTitle(s.title); setFormActive(s.is_active); setFormUserId(s.user_id || null);
     setEditingSpecialist(s);
     setDialogOpen(true);
   };
