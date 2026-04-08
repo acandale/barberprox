@@ -186,6 +186,11 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
       }));
       const { error: whError } = await supabase.from("specialist_work_hours").insert(workHoursRows);
       if (whError) throw whError;
+      
+      // Set user role to specialist if user assigned
+      if (formUserId) {
+        await supabase.from("user_roles").update({ role: "specialist" as any }).eq("user_id", formUserId);
+      }
     },
     onSuccess: () => {
       toast({ title: "Specialist adăugat cu succes" });
@@ -203,6 +208,15 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
         .update({ name: formName, title: formTitle, is_active: formActive, user_id: formUserId || null })
         .eq("id", editingSpecialist.id);
       if (error) throw error;
+      
+      // Update role for old user (revert to client)
+      if (editingSpecialist.user_id && editingSpecialist.user_id !== formUserId) {
+        await supabase.from("user_roles").update({ role: "client" as any }).eq("user_id", editingSpecialist.user_id);
+      }
+      // Set role for new user
+      if (formUserId && formUserId !== editingSpecialist.user_id) {
+        await supabase.from("user_roles").update({ role: "specialist" as any }).eq("user_id", formUserId);
+      }
     },
     onSuccess: () => {
       toast({ title: "Specialist actualizat" });
