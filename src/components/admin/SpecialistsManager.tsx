@@ -266,17 +266,19 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
   // Service CRUD mutations
   const createServiceMutation = useMutation({
     mutationFn: async () => {
+      if (!selectedSpecialistId) return;
       const { error } = await supabase.from("services").insert({
         name: serviceForm.name,
         description: serviceForm.description || null,
         duration_minutes: parseInt(serviceForm.duration_minutes),
         price: parseFloat(serviceForm.price),
+        specialist_id: selectedSpecialistId,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Serviciu adăugat" });
-      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["specialist-services-direct", selectedSpecialistId] });
       closeServiceDialog();
     },
     onError: () => toast({ title: "Eroare la adăugare serviciu", variant: "destructive" }),
@@ -295,7 +297,7 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     },
     onSuccess: () => {
       toast({ title: "Serviciu actualizat" });
-      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["specialist-services-direct", selectedSpecialistId] });
       closeServiceDialog();
     },
     onError: () => toast({ title: "Eroare la actualizare", variant: "destructive" }),
@@ -308,7 +310,7 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     },
     onSuccess: () => {
       toast({ title: "Serviciu șters" });
-      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["specialist-services-direct", selectedSpecialistId] });
       setDeleteServiceId(null);
     },
     onError: () => toast({ title: "Ștergerea a eșuat", variant: "destructive" }),
