@@ -76,7 +76,6 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
   const [formUserId, setFormUserId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<string | null>(restrictToSpecialistId || null);
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [editedWorkHours, setEditedWorkHours] = useState<Record<number, Partial<SpecialistWorkHour>>>({});
 
   // Service CRUD state
@@ -119,27 +118,18 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     }
   }, [restrictToSpecialistId, specialists]);
 
-  // Fetch all services
-  const { data: services = [] } = useQuery({
-    queryKey: ["admin-services"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("services").select("*").order("name");
-      if (error) throw error;
-      return data as Service[];
-    },
-  });
-
-  // Fetch specialist_services for the selected specialist
-  const { data: specialistServices = [] } = useQuery({
-    queryKey: ["specialist-services", selectedSpecialistId],
+  // Fetch services for the selected specialist
+  const { data: specialistServicesList = [] } = useQuery({
+    queryKey: ["specialist-services-direct", selectedSpecialistId],
     queryFn: async () => {
       if (!selectedSpecialistId) return [];
       const { data, error } = await supabase
-        .from("specialist_services")
-        .select("service_id")
-        .eq("specialist_id", selectedSpecialistId);
+        .from("services")
+        .select("*")
+        .eq("specialist_id", selectedSpecialistId)
+        .order("name");
       if (error) throw error;
-      return data.map((s: any) => s.service_id as string);
+      return data as Service[];
     },
     enabled: !!selectedSpecialistId,
   });
@@ -159,10 +149,6 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     },
     enabled: !!selectedSpecialistId,
   });
-
-  useEffect(() => {
-    setSelectedServices(specialistServices);
-  }, [specialistServices]);
 
   useEffect(() => {
     setEditedWorkHours({});
@@ -240,25 +226,7 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     onError: () => toast({ title: "Ștergerea a eșuat", variant: "destructive" }),
   });
 
-  const saveServicesMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedSpecialistId) return;
-      await supabase.from("specialist_services").delete().eq("specialist_id", selectedSpecialistId);
-      if (selectedServices.length > 0) {
-        const rows = selectedServices.map((sid) => ({
-          specialist_id: selectedSpecialistId,
-          service_id: sid,
-        }));
-        const { error } = await supabase.from("specialist_services").insert(rows);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      toast({ title: "Servicii actualizate" });
-      queryClient.invalidateQueries({ queryKey: ["specialist-services", selectedSpecialistId] });
-    },
-    onError: () => toast({ title: "Eroare la salvare servicii", variant: "destructive" }),
-  });
+  // Service CRUD now uses specialist_id directly on the services table
 
   const saveWorkHoursMutation = useMutation({
     mutationFn: async () => {
