@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { WorkHoursManager } from "@/components/admin/WorkHoursManager";
+// WorkHoursManager removed - each specialist manages their own schedule
 import { AdminBookAppointment } from "@/components/admin/AdminBookAppointment";
 import { SalonSettingsManager } from "@/components/admin/SalonSettingsManager";
 import { SpecialistsManager } from "@/components/admin/SpecialistsManager";
@@ -75,7 +75,7 @@ const SERVICE_COLORS: Record<string, string> = {
 };
 
 type ViewMode = "month" | "week" | "day";
-type AdminTab = "appointments" | "work-hours" | "settings" | "specialists";
+type AdminTab = "appointments" | "settings" | "specialists";
 
 export default function AdminPage() {
   const { user, isAdmin, isSpecialist, specialistId, isLoading: authLoading } = useAuth();
@@ -506,10 +506,6 @@ export default function AdminPage() {
                   <User className="h-4 w-4" />
                   Specialiști
                 </TabsTrigger>
-                <TabsTrigger value="work-hours" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  {t("admin.workHours")}
-                </TabsTrigger>
                 <TabsTrigger value="settings" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   {t("admin.settings")}
@@ -641,10 +637,6 @@ export default function AdminPage() {
           </TabsContent>
 
 
-          {/* Work Hours Tab */}
-          <TabsContent value="work-hours">
-            <WorkHoursManager />
-          </TabsContent>
 
 
           {/* Settings Tab */}

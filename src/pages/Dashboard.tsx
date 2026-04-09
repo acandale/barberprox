@@ -28,7 +28,7 @@ interface Appointment {
 }
 
 export default function Dashboard() {
-  const { user, profile, isLoading: authLoading, isAdmin } = useAuth();
+  const { user, profile, isLoading: authLoading, isAdmin, isSpecialist } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -252,14 +252,16 @@ export default function Dashboard() {
                 <Plus className="h-4 w-4" />
                 {t("dashboard.bookNew")}
               </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
-              >
-                <Scissors className="h-4 w-4" />
-                {t("dashboard.viewServices")}
-              </Button>
+              {isSpecialist && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate("/admin")}
+                >
+                  <Scissors className="h-4 w-4" />
+                  {t("nav.specialistPanel")}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>

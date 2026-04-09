@@ -84,13 +84,12 @@ export default function BookingPage() {
     queryFn: async () => {
       if (!selectedSpecialist) return [];
       const { data, error } = await supabase
-        .from("specialist_services")
-        .select("service_id, services(id, name, description, duration_minutes, price)")
-        .eq("specialist_id", selectedSpecialist.id);
+        .from("services")
+        .select("id, name, description, duration_minutes, price")
+        .eq("specialist_id", selectedSpecialist.id)
+        .order("name");
       if (error) throw error;
-      return (data || [])
-        .map((row: any) => row.services as Service)
-        .filter(Boolean);
+      return data as Service[];
     },
     enabled: !!selectedSpecialist,
   });
