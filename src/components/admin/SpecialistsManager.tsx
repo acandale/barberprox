@@ -483,19 +483,11 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
                       Serviciu nou
                     </Button>
                   </div>
-                  {services.length === 0 ? (
+                  {specialistServicesList.length === 0 ? (
                     <p className="text-muted-foreground text-center py-4">Niciun serviciu. Adaugă primul serviciu.</p>
                   ) : (
-                    services.map((service) => (
+                    specialistServicesList.map((service) => (
                       <div key={service.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                        <Checkbox
-                          checked={selectedServices.includes(service.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedServices((prev) =>
-                              checked ? [...prev, service.id] : prev.filter((id) => id !== service.id)
-                            );
-                          }}
-                        />
                         <div className="flex-1">
                           <p className="font-medium">{service.name}</p>
                           <p className="text-sm text-muted-foreground">
@@ -513,14 +505,6 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
                       </div>
                     ))
                   )}
-                  <Button
-                    variant="hero"
-                    onClick={() => saveServicesMutation.mutate()}
-                    disabled={saveServicesMutation.isPending}
-                    className="mt-4"
-                  >
-                    {saveServicesMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4" /> Salvează servicii</>}
-                  </Button>
                 </div>
               </TabsContent>
 
