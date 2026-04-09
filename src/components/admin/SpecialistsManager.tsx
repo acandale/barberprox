@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -76,7 +75,6 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
   const [formUserId, setFormUserId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<string | null>(restrictToSpecialistId || null);
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [editedWorkHours, setEditedWorkHours] = useState<Record<number, Partial<SpecialistWorkHour>>>({});
 
   // Service CRUD state
@@ -119,27 +117,18 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     }
   }, [restrictToSpecialistId, specialists]);
 
-  // Fetch all services
-  const { data: services = [] } = useQuery({
-    queryKey: ["admin-services"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("services").select("*").order("name");
-      if (error) throw error;
-      return data as Service[];
-    },
-  });
-
-  // Fetch specialist_services for the selected specialist
-  const { data: specialistServices = [] } = useQuery({
-    queryKey: ["specialist-services", selectedSpecialistId],
+  // Fetch services for the selected specialist
+  const { data: specialistServicesList = [] } = useQuery({
+    queryKey: ["specialist-services-direct", selectedSpecialistId],
     queryFn: async () => {
       if (!selectedSpecialistId) return [];
       const { data, error } = await supabase
-        .from("specialist_services")
-        .select("service_id")
-        .eq("specialist_id", selectedSpecialistId);
+        .from("services")
+        .select("*")
+        .eq("specialist_id", selectedSpecialistId)
+        .order("name");
       if (error) throw error;
-      return data.map((s: any) => s.service_id as string);
+      return data as Service[];
     },
     enabled: !!selectedSpecialistId,
   });
@@ -159,10 +148,6 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     },
     enabled: !!selectedSpecialistId,
   });
-
-  useEffect(() => {
-    setSelectedServices(specialistServices);
-  }, [specialistServices]);
 
   useEffect(() => {
     setEditedWorkHours({});
@@ -240,25 +225,7 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     onError: () => toast({ title: "Ștergerea a eșuat", variant: "destructive" }),
   });
 
-  const saveServicesMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedSpecialistId) return;
-      await supabase.from("specialist_services").delete().eq("specialist_id", selectedSpecialistId);
-      if (selectedServices.length > 0) {
-        const rows = selectedServices.map((sid) => ({
-          specialist_id: selectedSpecialistId,
-          service_id: sid,
-        }));
-        const { error } = await supabase.from("specialist_services").insert(rows);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      toast({ title: "Servicii actualizate" });
-      queryClient.invalidateQueries({ queryKey: ["specialist-services", selectedSpecialistId] });
-    },
-    onError: () => toast({ title: "Eroare la salvare servicii", variant: "destructive" }),
-  });
+  // Service CRUD now uses specialist_id directly on the services table
 
   const saveWorkHoursMutation = useMutation({
     mutationFn: async () => {
@@ -298,17 +265,19 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
   // Service CRUD mutations
   const createServiceMutation = useMutation({
     mutationFn: async () => {
+      if (!selectedSpecialistId) return;
       const { error } = await supabase.from("services").insert({
         name: serviceForm.name,
         description: serviceForm.description || null,
         duration_minutes: parseInt(serviceForm.duration_minutes),
         price: parseFloat(serviceForm.price),
+        specialist_id: selectedSpecialistId,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Serviciu adăugat" });
-      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["specialist-services-direct", selectedSpecialistId] });
       closeServiceDialog();
     },
     onError: () => toast({ title: "Eroare la adăugare serviciu", variant: "destructive" }),
@@ -327,7 +296,7 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     },
     onSuccess: () => {
       toast({ title: "Serviciu actualizat" });
-      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["specialist-services-direct", selectedSpecialistId] });
       closeServiceDialog();
     },
     onError: () => toast({ title: "Eroare la actualizare", variant: "destructive" }),
@@ -340,7 +309,7 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
     },
     onSuccess: () => {
       toast({ title: "Serviciu șters" });
-      queryClient.invalidateQueries({ queryKey: ["admin-services"] });
+      queryClient.invalidateQueries({ queryKey: ["specialist-services-direct", selectedSpecialistId] });
       setDeleteServiceId(null);
     },
     onError: () => toast({ title: "Ștergerea a eșuat", variant: "destructive" }),
@@ -513,19 +482,11 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
                       Serviciu nou
                     </Button>
                   </div>
-                  {services.length === 0 ? (
+                  {specialistServicesList.length === 0 ? (
                     <p className="text-muted-foreground text-center py-4">Niciun serviciu. Adaugă primul serviciu.</p>
                   ) : (
-                    services.map((service) => (
+                    specialistServicesList.map((service) => (
                       <div key={service.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-                        <Checkbox
-                          checked={selectedServices.includes(service.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedServices((prev) =>
-                              checked ? [...prev, service.id] : prev.filter((id) => id !== service.id)
-                            );
-                          }}
-                        />
                         <div className="flex-1">
                           <p className="font-medium">{service.name}</p>
                           <p className="text-sm text-muted-foreground">
@@ -543,14 +504,6 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
                       </div>
                     ))
                   )}
-                  <Button
-                    variant="hero"
-                    onClick={() => saveServicesMutation.mutate()}
-                    disabled={saveServicesMutation.isPending}
-                    className="mt-4"
-                  >
-                    {saveServicesMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4" /> Salvează servicii</>}
-                  </Button>
                 </div>
               </TabsContent>
 

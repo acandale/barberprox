@@ -5,7 +5,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Scissors, Plus, Loader2, DollarSign } from "lucide-react";
+import { Calendar, Clock, Scissors, Plus, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isFuture, isToday, parseISO } from "date-fns";
@@ -28,7 +28,7 @@ interface Appointment {
 }
 
 export default function Dashboard() {
-  const { user, profile, isLoading: authLoading, isAdmin } = useAuth();
+  const { user, profile, isLoading: authLoading, isAdmin, isSpecialist } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -83,17 +83,6 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
-  const { data: services = [] } = useQuery({
-    queryKey: ["admin-services"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("services")
-        .select("*")
-        .order("price", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const upcomingAppointments = appointments.filter(
     (apt) => isFuture(parseISO(apt.start_time)) && apt.status === "confirmed"
@@ -252,14 +241,16 @@ export default function Dashboard() {
                 <Plus className="h-4 w-4" />
                 {t("dashboard.bookNew")}
               </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
-              >
-                <Scissors className="h-4 w-4" />
-                {t("dashboard.viewServices")}
-              </Button>
+              {isSpecialist && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate("/admin")}
+                >
+                  <Scissors className="h-4 w-4" />
+                  {t("nav.specialistPanel")}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>

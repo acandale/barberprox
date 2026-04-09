@@ -266,6 +266,7 @@ export type Database = {
           id: string
           name: string
           price: number
+          specialist_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -274,6 +275,7 @@ export type Database = {
           id?: string
           name: string
           price: number
+          specialist_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -282,35 +284,11 @@ export type Database = {
           id?: string
           name?: string
           price?: number
-        }
-        Relationships: []
-      }
-      specialist_services: {
-        Row: {
-          id: string
-          service_id: string
-          specialist_id: string
-        }
-        Insert: {
-          id?: string
-          service_id: string
-          specialist_id: string
-        }
-        Update: {
-          id?: string
-          service_id?: string
-          specialist_id?: string
+          specialist_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "specialist_services_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "specialist_services_specialist_id_fkey"
+            foreignKeyName: "services_specialist_id_fkey"
             columns: ["specialist_id"]
             isOneToOne: false
             referencedRelation: "specialists"

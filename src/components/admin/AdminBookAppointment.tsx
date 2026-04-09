@@ -82,11 +82,12 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     queryFn: async () => {
       if (!selectedSpecialistId) return [];
       const { data, error } = await supabase
-        .from("specialist_services")
-        .select("service_id, services(id, name, description, duration_minutes, price)")
-        .eq("specialist_id", selectedSpecialistId);
+        .from("services")
+        .select("id, name, description, duration_minutes, price")
+        .eq("specialist_id", selectedSpecialistId)
+        .order("name");
       if (error) throw error;
-      return (data || []).map((row: any) => row.services).filter(Boolean);
+      return data;
     },
     enabled: !!selectedSpecialistId && open,
   });
