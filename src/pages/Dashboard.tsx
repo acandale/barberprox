@@ -5,7 +5,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Scissors, Plus, Loader2, DollarSign } from "lucide-react";
+import { Calendar, Clock, Scissors, Plus, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isFuture, isToday, parseISO } from "date-fns";
