@@ -171,7 +171,7 @@ export default function AdminPage() {
   });
 
   // Fetch appointments
-  const { data: appointments = [], isLoading } = useQuery({
+  const { data: appointments = [], isLoading, isFetching } = useQuery({
     queryKey: ["admin-appointments", currentDate.toISOString(), viewMode, filterSpecialistId],
     queryFn: async () => {
       let startDate: Date;
