@@ -171,7 +171,7 @@ export default function AdminPage() {
   });
 
   // Fetch appointments
-  const { data: appointments = [], isLoading } = useQuery({
+  const { data: appointments = [], isLoading, isFetching } = useQuery({
     queryKey: ["admin-appointments", currentDate.toISOString(), viewMode, filterSpecialistId],
     queryFn: async () => {
       let startDate: Date;
@@ -470,7 +470,7 @@ export default function AdminPage() {
     );
   };
 
-  if (authLoading || isLoading) {
+  if (authLoading || (isLoading && appointments.length === 0)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-purple" />
