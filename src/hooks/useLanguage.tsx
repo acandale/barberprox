@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import enLocale from "@/locales/en.json";
+import roLocale from "@/locales/ro.json";
 
 export type Language = "ro" | "en";
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, vars?: Record<string, string | number>) => string;
 }
 
 const translations: Record<Language, Record<string, string>> = {
@@ -327,6 +329,8 @@ const translations: Record<Language, Record<string, string>> = {
     "day.thu": "Thu",
     "day.fri": "Fri",
     "day.sat": "Sat",
+
+    ...enLocale,
   },
   ro: {
     // Navbar
@@ -646,6 +650,8 @@ const translations: Record<Language, Record<string, string>> = {
     "day.thu": "Joi",
     "day.fri": "Vin",
     "day.sat": "Sâm",
+
+    ...roLocale,
   },
 };
 
@@ -662,8 +668,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("app-language", lang);
   };
 
-  const t = (key: string): string => {
-    return translations[language][key] || key;
+  const t = (key: string, vars?: Record<string, string | number>): string => {
+    let s = translations[language][key] || key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        s = s.replace(new RegExp(`{{\\s*${k}\\s*}}`, "g"), String(v));
+      }
+    }
+    return s;
   };
 
   return (
@@ -679,4 +691,10 @@ export function useLanguage() {
     throw new Error("useLanguage must be used within a LanguageProvider");
   }
   return context;
+}
+
+/** Same translation API as useLanguage; use for components that only need `t`. */
+export function useTranslation() {
+  const { t } = useLanguage();
+  return { t };
 }

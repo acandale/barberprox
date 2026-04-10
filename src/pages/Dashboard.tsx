@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useLanguage } from "@/hooks/useLanguage";
+import { useTranslation } from "@/hooks/useLanguage";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Scissors, Plus, Loader2 } from "lucide-react";
+import { BarChart3, Calendar, Clock, Scissors, Plus, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isFuture, isToday, parseISO } from "date-fns";
@@ -31,7 +31,7 @@ export default function Dashboard() {
   const { user, profile, isLoading: authLoading, isAdmin, isSpecialist } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -94,6 +94,11 @@ export default function Dashboard() {
       )
     : [];
 
+  const todayTotalRevenue = todayAppointments.reduce(
+    (sum, apt) => sum + Number(apt.services?.price ?? 0),
+    0
+  );
+
   const nextAppointment = upcomingAppointments[0];
 
   const handleCancelAppointment = async (appointmentId: string) => {
@@ -130,6 +135,39 @@ export default function Dashboard() {
       <Navbar />
       
       <main className="container mx-auto px-4 pt-24 pb-12">
+        {isAdmin && (
+          <Card className="mb-6 border-purple/30 bg-purple/5" variant="elevated">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-purple" />
+                {t("dashboard.adminSummary.title")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    {t("dashboard.adminSummary.confirmedLabel")}
+                  </p>
+                  <p className="text-3xl font-bold tabular-nums text-foreground">
+                    {todayAppointments.length}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    {t("dashboard.adminSummary.revenueLabel")}
+                  </p>
+                  <p className="text-3xl font-bold tabular-nums text-purple">
+                    {t("dashboard.adminSummary.totalValue", {
+                      amount: String(Math.round(todayTotalRevenue)),
+                    })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">
