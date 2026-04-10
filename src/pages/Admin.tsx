@@ -522,6 +522,15 @@ export default function AdminPage() {
                   <Scissors className="h-4 w-4" />
                   {t("admin.myConfig")}
                 </TabsTrigger>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex items-center gap-2 ml-2"
+                  onClick={() => setBookDialogOpen(true)}
+                >
+                  <Calendar className="h-4 w-4" />
+                  Adaugă programare
+                </Button>
               </>
             )}
           </TabsList>
