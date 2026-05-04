@@ -15,8 +15,13 @@ const Install = () => {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    // Check if already installed (standalone PWA on Android/Desktop or iOS Safari)
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      // @ts-ignore - iOS Safari only
+      window.navigator.standalone === true ||
+      document.referrer.startsWith("android-app://");
+    if (isStandalone) {
       setIsInstalled(true);
     }
 
