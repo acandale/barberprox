@@ -237,18 +237,18 @@ export default function BookingPage() {
       
       <main className="container mx-auto px-4 pt-24 pb-12">
         {/* Progress Steps */}
-        <div className="flex items-center justify-center gap-4 mb-8">
+        <div className="flex items-center justify-center gap-1 sm:gap-4 mb-8 px-2 max-w-full overflow-hidden">
           {stepLabels.map((label, i) => {
             const s = i + 1;
             return (
-              <div key={s} className="flex items-center gap-2">
-                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all", step >= s ? "bg-purple text-white" : "bg-muted text-muted-foreground")}>
-                  {step > s ? <Check className="h-4 w-4" /> : s}
+              <div key={s} className="flex items-center gap-1 sm:gap-2 min-w-0">
+                <div className={cn("w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all shrink-0", step >= s ? "bg-purple text-white" : "bg-muted text-muted-foreground")}>
+                  {step > s ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : s}
                 </div>
                 <span className={cn("text-sm hidden sm:block", step >= s ? "text-foreground" : "text-muted-foreground")}>
                   {label}
                 </span>
-                {s < totalSteps && <div className={cn("w-12 h-0.5 mx-2", step > s ? "bg-purple" : "bg-muted")} />}
+                {s < totalSteps && <div className={cn("w-4 sm:w-12 h-0.5 sm:mx-2 shrink", step > s ? "bg-purple" : "bg-muted")} />}
               </div>
             );
           })}
