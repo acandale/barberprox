@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useTheme } from "@/hooks/useTheme";
+import { useSalonSettings } from "@/hooks/useSalonSettings";
 import { Scissors, Menu, X, User, Calendar, LogOut, Settings, Download, Globe, Sun, Moon } from "lucide-react";
 import { useState } from "react";
 import {
