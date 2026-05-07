@@ -18,6 +18,7 @@ export function Navbar() {
   const { user, profile, isAdmin, isSpecialist, signOut } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const { data: salonSettings } = useSalonSettings();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
