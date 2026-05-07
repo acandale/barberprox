@@ -43,7 +43,7 @@ export function Navbar() {
               <Scissors className="h-5 w-5 text-white" />
             </div>
             <span className="font-bold text-xl text-white tracking-tight">
-              BarberPro
+              {salonSettings?.salon_name || "BarberPro"}
             </span>
           </Link>
 
