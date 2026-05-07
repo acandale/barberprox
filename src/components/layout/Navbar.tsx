@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useTheme } from "@/hooks/useTheme";
+import { useSalonSettings } from "@/hooks/useSalonSettings";
 import { Scissors, Menu, X, User, Calendar, LogOut, Settings, Download, Globe, Sun, Moon } from "lucide-react";
 import { useState } from "react";
 import {
@@ -17,6 +18,7 @@ export function Navbar() {
   const { user, profile, isAdmin, isSpecialist, signOut } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const { data: salonSettings } = useSalonSettings();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -41,7 +43,7 @@ export function Navbar() {
               <Scissors className="h-5 w-5 text-white" />
             </div>
             <span className="font-bold text-xl text-white tracking-tight">
-              BarberPro
+              {salonSettings?.salon_name || "BarberPro"}
             </span>
           </Link>
 
