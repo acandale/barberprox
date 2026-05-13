@@ -233,19 +233,6 @@ export function SalonSettingsManager() {
             <Input value={form.footer_email || ""} onChange={(e) => setForm({ ...form, footer_email: e.target.value })} />
           </div>
 
-          <Separator />
-          <Label className="text-base font-semibold">{t("settingsManager.workingHours")}</Label>
-          {(form.footer_hours || []).map((hour, i) => (
-            <div key={i} className="flex gap-2 items-center">
-              <Input value={hour.label} onChange={(e) => updateHour(i, e.target.value)} className="flex-1" />
-              <Button variant="ghost" size="icon" onClick={() => removeHour(i)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          ))}
-          <Button variant="outline" size="sm" onClick={addHour}>
-            <Plus className="h-4 w-4" /> {t("settingsManager.addHours")}
-          </Button>
         </CardContent>
       </Card>
 
