@@ -218,21 +218,24 @@ export default function AdminPage() {
       if (error) throw error;
       
       // Fetch profiles for all appointments
-      const userIds = [...new Set(data?.map(apt => apt.user_id) || [])];
-      if (userIds.length === 0) return [] as AppointmentWithDetails[];
-      
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, phone")
-        .in("id", userIds);
-      
-      const profilesMap = new Map(
-        profilesData?.map(p => [p.id, { full_name: p.full_name, email: p.email, phone: p.phone }]) || []
-      );
-      
-      return (data || []).map(apt => ({
+      const userIds = [...new Set((data || []).map(apt => apt.user_id).filter(Boolean))] as string[];
+
+      let profilesMap = new Map<string, { full_name: string; email: string; phone: string }>();
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, phone")
+          .in("id", userIds);
+
+        profilesMap = new Map(
+          profilesData?.map(p => [p.id, { full_name: p.full_name, email: p.email, phone: p.phone }]) || []
+        );
+      }
+
+      return (data || []).map((apt: any) => ({
         ...apt,
-        profiles: profilesMap.get(apt.user_id) || null
+        profiles: (apt.user_id ? profilesMap.get(apt.user_id) : null)
+          || (apt.guest_name ? { full_name: apt.guest_name, email: "", phone: apt.guest_phone || "" } : null)
       })) as AppointmentWithDetails[];
     },
     enabled: !!user && (isAdmin || isSpecialist),
@@ -550,7 +553,7 @@ export default function AdminPage() {
                           onClick={() => setBookDialogOpen(true)}
                         >
                           <Calendar className="h-4 w-4" />
-                          New Appointment
+                          {t("admin.newAppointment")}
                         </Button>
                         <Select
                           value={filterSpecialistId || "all"}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addMinutes, parseISO, setHours, setMinutes } from "date-fns";
@@ -31,6 +31,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Loader2, ChevronsUpDown, Check } from "lucide-react";
 
@@ -42,13 +45,17 @@ interface AdminBookAppointmentProps {
 export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmentProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { specialistId: mySpecialistId } = useAuth();
 
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<string>("");
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [isNewClient, setIsNewClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
 
   // Fetch clients
   const { data: clients = [] } = useQuery({
@@ -153,7 +160,23 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     enabled: !!selectedDate && open,
   });
 
+  // Auto-populate: logged-in specialist, today's date
+  useEffect(() => {
+    if (!open) return;
+    setSelectedDate((d) => d ?? new Date());
+    if (mySpecialistId) setSelectedSpecialistId((s) => s || mySpecialistId);
+  }, [open, mySpecialistId]);
+
+  // Auto-select first available service
+  useEffect(() => {
+    if (open && services.length > 0 && !selectedServiceId) {
+      setSelectedServiceId(services[0].id);
+    }
+  }, [open, services, selectedServiceId]);
+
   const selectedService = services.find((s) => s.id === selectedServiceId);
+
+
 
   const generateTimeSlots = () => {
     if (!selectedDate || !selectedService || !selectedSpecialistId) return [];
@@ -198,12 +221,15 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
 
   const bookMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedService || !selectedDate || !selectedTime || !selectedClientId || !selectedSpecialistId) throw new Error("Missing fields");
+      const hasClient = isNewClient ? newClientName.trim().length > 1 : !!selectedClientId;
+      if (!selectedService || !selectedDate || !selectedTime || !hasClient || !selectedSpecialistId) throw new Error("Missing fields");
       const [hours, minutes] = selectedTime.split(":").map(Number);
       const startTime = new Date(selectedDate); startTime.setHours(hours, minutes, 0, 0);
       const endTime = addMinutes(startTime, selectedService.duration_minutes);
       const { error } = await supabase.from("appointments").insert({
-        user_id: selectedClientId,
+        user_id: isNewClient ? null : selectedClientId,
+        guest_name: isNewClient ? newClientName.trim() : null,
+        guest_phone: isNewClient ? newClientPhone.trim() : null,
         service_id: selectedService.id,
         specialist_id: selectedSpecialistId,
         start_time: startTime.toISOString(),
@@ -215,7 +241,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     onSuccess: () => {
       toast({
         title: "Programare creată",
-        description: `Programare creată pentru ${clients.find((c) => c.id === selectedClientId)?.full_name}`,
+        description: `Programare creată pentru ${isNewClient ? newClientName : clients.find((c) => c.id === selectedClientId)?.full_name}`,
       });
       queryClient.invalidateQueries({ queryKey: ["admin-appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-for-date"] });
@@ -239,8 +265,12 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     setSelectedDate(undefined);
     setSelectedTime(null);
     setClientSearchOpen(false);
+    setIsNewClient(false);
+    setNewClientName("");
+    setNewClientPhone("");
     onOpenChange(false);
   };
+
 
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
@@ -253,6 +283,16 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
           {/* Client */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Client</label>
+            <div className="flex items-center gap-2">
+              <Checkbox id="new-client" checked={isNewClient} onCheckedChange={(v) => { setIsNewClient(!!v); setSelectedClientId(""); }} />
+              <label htmlFor="new-client" className="text-sm cursor-pointer">Client nou</label>
+            </div>
+            {isNewClient ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Input placeholder="Nume complet" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} maxLength={100} />
+                <Input placeholder="Telefon" value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} maxLength={30} />
+              </div>
+            ) : (
             <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
@@ -282,7 +322,9 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
                 </Command>
               </PopoverContent>
             </Popover>
+            )}
           </div>
+
 
           {/* Specialist */}
           <div className="space-y-2">
@@ -349,7 +391,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button variant="ghost" onClick={resetAndClose}>Închide</Button>
-            <Button onClick={() => bookMutation.mutate()} disabled={!selectedClientId || !selectedServiceId || !selectedSpecialistId || !selectedDate || !selectedTime || bookMutation.isPending}>
+            <Button onClick={() => bookMutation.mutate()} disabled={(isNewClient ? newClientName.trim().length < 2 : !selectedClientId) || !selectedServiceId || !selectedSpecialistId || !selectedDate || !selectedTime || bookMutation.isPending}>
               {bookMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Programează"}
             </Button>
           </div>
