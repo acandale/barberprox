@@ -221,12 +221,15 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
 
   const bookMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedService || !selectedDate || !selectedTime || !selectedClientId || !selectedSpecialistId) throw new Error("Missing fields");
+      const hasClient = isNewClient ? newClientName.trim().length > 1 : !!selectedClientId;
+      if (!selectedService || !selectedDate || !selectedTime || !hasClient || !selectedSpecialistId) throw new Error("Missing fields");
       const [hours, minutes] = selectedTime.split(":").map(Number);
       const startTime = new Date(selectedDate); startTime.setHours(hours, minutes, 0, 0);
       const endTime = addMinutes(startTime, selectedService.duration_minutes);
       const { error } = await supabase.from("appointments").insert({
-        user_id: selectedClientId,
+        user_id: isNewClient ? null : selectedClientId,
+        guest_name: isNewClient ? newClientName.trim() : null,
+        guest_phone: isNewClient ? newClientPhone.trim() : null,
         service_id: selectedService.id,
         specialist_id: selectedSpecialistId,
         start_time: startTime.toISOString(),
@@ -238,7 +241,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     onSuccess: () => {
       toast({
         title: "Programare creată",
-        description: `Programare creată pentru ${clients.find((c) => c.id === selectedClientId)?.full_name}`,
+        description: `Programare creată pentru ${isNewClient ? newClientName : clients.find((c) => c.id === selectedClientId)?.full_name}`,
       });
       queryClient.invalidateQueries({ queryKey: ["admin-appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-for-date"] });
@@ -262,8 +265,12 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     setSelectedDate(undefined);
     setSelectedTime(null);
     setClientSearchOpen(false);
+    setIsNewClient(false);
+    setNewClientName("");
+    setNewClientPhone("");
     onOpenChange(false);
   };
+
 
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
