@@ -218,6 +218,22 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     return blockedDays.some((bd) => dateStr >= bd.start_date && dateStr <= bd.end_date);
   };
 
+  // Auto-select date: today if the specialist works today, otherwise the next available day
+  useEffect(() => {
+    if (!open || selectedDate || !selectedSpecialistId || specialistWorkHours.length === 0) return;
+    for (let i = 0; i < 60; i++) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() + i);
+      if (!isDateDisabled(d)) {
+        setSelectedDate(d);
+        return;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, selectedDate, selectedSpecialistId, specialistWorkHours, blockedDays]);
+
+
   const bookMutation = useMutation({
     mutationFn: async () => {
       const hasClient = isNewClient ? newClientName.trim().length > 1 : !!selectedClientId;
