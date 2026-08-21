@@ -283,6 +283,16 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
           {/* Client */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Client</label>
+            <div className="flex items-center gap-2">
+              <Checkbox id="new-client" checked={isNewClient} onCheckedChange={(v) => { setIsNewClient(!!v); setSelectedClientId(""); }} />
+              <label htmlFor="new-client" className="text-sm cursor-pointer">Client nou</label>
+            </div>
+            {isNewClient ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Input placeholder="Nume complet" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} maxLength={100} />
+                <Input placeholder="Telefon" value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} maxLength={30} />
+              </div>
+            ) : (
             <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
@@ -312,7 +322,9 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
                 </Command>
               </PopoverContent>
             </Popover>
+            )}
           </div>
+
 
           {/* Specialist */}
           <div className="space-y-2">
