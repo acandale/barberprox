@@ -160,7 +160,23 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     enabled: !!selectedDate && open,
   });
 
+  // Auto-populate: logged-in specialist, today's date
+  useEffect(() => {
+    if (!open) return;
+    setSelectedDate((d) => d ?? new Date());
+    if (mySpecialistId) setSelectedSpecialistId((s) => s || mySpecialistId);
+  }, [open, mySpecialistId]);
+
+  // Auto-select first available service
+  useEffect(() => {
+    if (open && services.length > 0 && !selectedServiceId) {
+      setSelectedServiceId(services[0].id);
+    }
+  }, [open, services, selectedServiceId]);
+
   const selectedService = services.find((s) => s.id === selectedServiceId);
+
+
 
   const generateTimeSlots = () => {
     if (!selectedDate || !selectedService || !selectedSpecialistId) return [];
