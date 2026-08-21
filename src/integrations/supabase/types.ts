@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           created_at: string | null
           end_time: string
+          guest_name: string | null
+          guest_phone: string | null
           id: string
           notes: string | null
           service_id: string
@@ -25,11 +27,13 @@ export type Database = {
           start_time: string
           status: string | null
           updated_at: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
           end_time: string
+          guest_name?: string | null
+          guest_phone?: string | null
           id?: string
           notes?: string | null
           service_id: string
@@ -37,11 +41,13 @@ export type Database = {
           start_time: string
           status?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
           end_time?: string
+          guest_name?: string | null
+          guest_phone?: string | null
           id?: string
           notes?: string | null
           service_id?: string
@@ -49,7 +55,7 @@ export type Database = {
           start_time?: string
           status?: string | null
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
