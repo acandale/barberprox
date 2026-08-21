@@ -31,6 +31,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Loader2, ChevronsUpDown, Check } from "lucide-react";
 
@@ -42,13 +45,17 @@ interface AdminBookAppointmentProps {
 export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmentProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { specialistId: mySpecialistId } = useAuth();
 
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<string>("");
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [isNewClient, setIsNewClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
 
   // Fetch clients
   const { data: clients = [] } = useQuery({
