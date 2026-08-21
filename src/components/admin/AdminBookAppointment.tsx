@@ -160,10 +160,9 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     enabled: !!selectedDate && open,
   });
 
-  // Auto-populate: logged-in specialist, today's date
+  // Auto-populate: logged-in specialist
   useEffect(() => {
     if (!open) return;
-    setSelectedDate((d) => d ?? new Date());
     if (mySpecialistId) setSelectedSpecialistId((s) => s || mySpecialistId);
   }, [open, mySpecialistId]);
 
