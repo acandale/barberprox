@@ -550,7 +550,7 @@ export default function AdminPage() {
                           onClick={() => setBookDialogOpen(true)}
                         >
                           <Calendar className="h-4 w-4" />
-                          New Appointment
+                          {t("admin.newAppointment")}
                         </Button>
                         <Select
                           value={filterSpecialistId || "all"}
