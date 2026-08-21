@@ -391,7 +391,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button variant="ghost" onClick={resetAndClose}>Închide</Button>
-            <Button onClick={() => bookMutation.mutate()} disabled={!selectedClientId || !selectedServiceId || !selectedSpecialistId || !selectedDate || !selectedTime || bookMutation.isPending}>
+            <Button onClick={() => bookMutation.mutate()} disabled={(isNewClient ? newClientName.trim().length < 2 : !selectedClientId) || !selectedServiceId || !selectedSpecialistId || !selectedDate || !selectedTime || bookMutation.isPending}>
               {bookMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Programează"}
             </Button>
           </div>
