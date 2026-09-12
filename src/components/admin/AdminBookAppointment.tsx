@@ -115,49 +115,53 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
   });
 
   // Fetch blocked days
-  const { data: blockedDays = [] } = useQuery({
-    queryKey: ["blocked-days-booking"],
+  const { data: blockedDays = [], isLoading: blockedDaysLoading } = useQuery({
+    queryKey: ["blocked-days-booking", selectedSpecialistId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("blocked_days").select("start_date, end_date").gte("end_date", format(new Date(), "yyyy-MM-dd"));
+      if (!selectedSpecialistId) return [];
+      const { data, error } = await supabase.from("blocked_days")
+        .select("start_date, end_date")
+        .eq("specialist_id", selectedSpecialistId)
+        .gte("end_date", format(new Date(), "yyyy-MM-dd"));
       if (error) throw error;
       return data;
     },
-    enabled: open,
+    enabled: !!selectedSpecialistId && open,
   });
 
-  // Fetch existing appointments for the selected date + specialist
-  const { data: existingAppointments = [] } = useQuery({
-    queryKey: ["appointments-for-date", selectedDate?.toISOString(), selectedSpecialistId],
+  // Fetch appointments for the next 60 days so the first date with a free slot can be selected.
+  const { data: existingAppointments = [], isLoading: appointmentsLoading } = useQuery({
+    queryKey: ["appointments-for-date", selectedSpecialistId],
     queryFn: async () => {
-      if (!selectedDate) return [];
-      const startOfDay = new Date(selectedDate); startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(selectedDate); endOfDay.setHours(23, 59, 59, 999);
-      let query = supabase.from("appointments").select("start_time, end_time")
+      if (!selectedSpecialistId) return [];
+      const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+      const endOfRange = new Date(startOfDay); endOfRange.setDate(endOfRange.getDate() + 60); endOfRange.setHours(23, 59, 59, 999);
+      const { data, error } = await supabase.from("appointments").select("start_time, end_time")
         .gte("start_time", startOfDay.toISOString())
-        .lte("start_time", endOfDay.toISOString())
-        .neq("status", "cancelled");
-      if (selectedSpecialistId) query = query.eq("specialist_id", selectedSpecialistId);
-      const { data, error } = await query;
+        .lte("start_time", endOfRange.toISOString())
+        .neq("status", "cancelled")
+        .eq("specialist_id", selectedSpecialistId);
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedDate && !!selectedSpecialistId && open,
+    enabled: !!selectedSpecialistId && open,
   });
 
-  // Fetch blocked times
-  const { data: blockedTimes = [] } = useQuery({
-    queryKey: ["blocked-times", selectedDate?.toISOString()],
+  // Fetch blocked times for the same range and selected specialist.
+  const { data: blockedTimes = [], isLoading: blockedTimesLoading } = useQuery({
+    queryKey: ["blocked-times", selectedSpecialistId],
     queryFn: async () => {
-      if (!selectedDate) return [];
-      const startOfDay = new Date(selectedDate); startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(selectedDate); endOfDay.setHours(23, 59, 59, 999);
+      if (!selectedSpecialistId) return [];
+      const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+      const endOfRange = new Date(startOfDay); endOfRange.setDate(endOfRange.getDate() + 60); endOfRange.setHours(23, 59, 59, 999);
       const { data, error } = await supabase.from("blocked_times").select("start_time, end_time")
         .gte("start_time", startOfDay.toISOString())
-        .lte("start_time", endOfDay.toISOString());
+        .lte("start_time", endOfRange.toISOString())
+        .eq("specialist_id", selectedSpecialistId);
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedDate && open,
+    enabled: !!selectedSpecialistId && open,
   });
 
   // Auto-populate: logged-in specialist
@@ -177,16 +181,16 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
 
 
 
-  const generateTimeSlots = () => {
-    if (!selectedDate || !selectedService || !selectedSpecialistId) return [];
-    const dayOfWeek = selectedDate.getDay();
+  const generateTimeSlots = (date = selectedDate) => {
+    if (!date || !selectedService || !selectedSpecialistId) return [];
+    const dayOfWeek = date.getDay();
     const workHour = specialistWorkHours.find((wh: any) => wh.day_of_week === dayOfWeek);
     if (!workHour || !workHour.is_working_day) return [];
     const slots: string[] = [];
     const [startH, startM] = workHour.start_time.split(":").map(Number);
     const [endH, endM] = workHour.end_time.split(":").map(Number);
-    let currentTime = setMinutes(setHours(selectedDate, startH), startM);
-    const endTime = setMinutes(setHours(selectedDate, endH), endM);
+    let currentTime = setMinutes(setHours(date, startH), startM);
+    const endTime = setMinutes(setHours(date, endH), endM);
     while (currentTime < endTime) {
       const slotEnd = addMinutes(currentTime, selectedService.duration_minutes);
       if (slotEnd <= endTime) {
@@ -209,18 +213,21 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
   const timeSlots = generateTimeSlots();
 
   const isDateDisabled = (date: Date) => {
-    if (!selectedSpecialistId) return true;
+    if (!selectedSpecialistId || !selectedService) return true;
     const dayOfWeek = date.getDay();
     const workHour = specialistWorkHours.find((wh: any) => wh.day_of_week === dayOfWeek);
     if (!workHour || !workHour.is_working_day) return true;
     if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true;
     const dateStr = format(date, "yyyy-MM-dd");
-    return blockedDays.some((bd) => dateStr >= bd.start_date && dateStr <= bd.end_date);
+    if (blockedDays.some((bd) => dateStr >= bd.start_date && dateStr <= bd.end_date)) return true;
+    return generateTimeSlots(date).length === 0;
   };
 
-  // Auto-select date: today if the specialist works today, otherwise the next available day
+  // Select the first day that has at least one free slot for this specialist and service.
   useEffect(() => {
-    if (!open || selectedDate || !selectedSpecialistId || specialistWorkHours.length === 0) return;
+    if (!open || !selectedSpecialistId || !selectedService || specialistWorkHours.length === 0) return;
+    if (appointmentsLoading || blockedTimesLoading || blockedDaysLoading) return;
+    if (selectedDate && !isDateDisabled(selectedDate)) return;
     for (let i = 0; i < 60; i++) {
       const d = new Date();
       d.setHours(0, 0, 0, 0);
@@ -231,7 +238,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedDate, selectedSpecialistId, specialistWorkHours, blockedDays]);
+  }, [open, selectedDate, selectedSpecialistId, selectedService, specialistWorkHours, blockedDays, existingAppointments, blockedTimes, appointmentsLoading, blockedTimesLoading, blockedDaysLoading]);
 
 
   const bookMutation = useMutation({
