@@ -261,6 +261,16 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
       queryClient.invalidateQueries({ queryKey: ["admin-appointments"] });
       queryClient.invalidateQueries({ queryKey: ["appointments-for-date"] });
       setSelectedTime(null);
+      // Advance to the next available working day
+      for (let i = 1; i < 60; i++) {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + i);
+        if (!isDateDisabled(d)) {
+          setSelectedDate(d);
+          break;
+        }
+      }
     },
     onError: (error: any) => {
       const isOverlap = error?.message?.includes("overlap");
@@ -344,7 +354,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
           {/* Specialist */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Specialist</label>
-            <Select value={selectedSpecialistId} onValueChange={(v) => { setSelectedSpecialistId(v); setSelectedServiceId(""); setSelectedTime(null); setSelectedDate(undefined); }}>
+            <Select value={selectedSpecialistId} disabled={!!mySpecialistId} onValueChange={(v) => { setSelectedSpecialistId(v); setSelectedServiceId(""); setSelectedTime(null); setSelectedDate(undefined); }}>
               <SelectTrigger><SelectValue placeholder="Selectează specialist" /></SelectTrigger>
               <SelectContent>
                 {specialists.map((s: any) => (
