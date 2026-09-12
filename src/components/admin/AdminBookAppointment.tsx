@@ -50,7 +50,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<string>("");
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
   const [isNewClient, setIsNewClient] = useState(false);
