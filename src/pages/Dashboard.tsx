@@ -288,7 +288,7 @@ export default function Dashboard() {
               <Button
                 variant="hero"
                 className="w-full justify-start"
-                onClick={() => navigate("/book")}
+                onClick={() => (isSpecialist && !isAdmin ? setBookDialogOpen(true) : navigate("/book"))}
               >
                 <Plus className="h-4 w-4" />
                 {t("dashboard.bookNew")}
