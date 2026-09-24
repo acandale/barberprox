@@ -31,10 +31,11 @@ interface Appointment {
 }
 
 export default function Dashboard() {
-  const { user, profile, isLoading: authLoading, isAdmin, isSpecialist } = useAuth();
+  const { user, profile, isLoading: authLoading, isAdmin, isSpecialist, specialistId } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const [bookDialogOpen, setBookDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
