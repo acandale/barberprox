@@ -379,6 +379,16 @@ export default function Dashboard() {
           )
         )}
       </main>
+
+      {isSpecialist && (
+        <AdminBookAppointment
+          open={bookDialogOpen}
+          onOpenChange={(open) => {
+            setBookDialogOpen(open);
+            if (!open) refetch();
+          }}
+        />
+      )}
     </div>
   );
 }
