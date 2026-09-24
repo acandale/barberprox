@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isFuture, isToday, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { AdminBookAppointment } from "@/components/admin/AdminBookAppointment";
 
 interface Appointment {
   id: string;
@@ -17,6 +18,8 @@ interface Appointment {
   end_time: string;
   status: string;
   user_id?: string;
+  guest_name?: string | null;
+  guest_phone?: string | null;
   services: {
     name: string;
     duration_minutes: number;
@@ -28,10 +31,11 @@ interface Appointment {
 }
 
 export default function Dashboard() {
-  const { user, profile, isLoading: authLoading, isAdmin, isSpecialist } = useAuth();
+  const { user, profile, isLoading: authLoading, isAdmin, isSpecialist, specialistId } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const [bookDialogOpen, setBookDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -40,10 +44,10 @@ export default function Dashboard() {
   }, [user, authLoading, navigate]);
 
   const { data: appointments = [], isLoading: appointmentsLoading, refetch } = useQuery({
-    queryKey: ["my-appointments", user?.id, isAdmin],
+    queryKey: ["my-appointments", user?.id, isAdmin, isSpecialist, specialistId],
     queryFn: async () => {
       if (!user) return [];
-      
+
       let query = supabase
         .from("appointments")
         .select(`
@@ -52,6 +56,8 @@ export default function Dashboard() {
           end_time,
           status,
           user_id,
+          guest_name,
+          guest_phone,
           services (
             name,
             duration_minutes,
@@ -60,24 +66,30 @@ export default function Dashboard() {
         `)
         .order("start_time", { ascending: true });
 
-      if (!isAdmin) {
+      if (isSpecialist && !isAdmin) {
+        if (!specialistId) return [];
+        query = query.eq("specialist_id", specialistId);
+      } else if (!isAdmin) {
         query = query.eq("user_id", user.id);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      
-      if (isAdmin && data.length > 0) {
-        const userIds = [...new Set(data.map(a => a.user_id))];
+
+      if ((isAdmin || isSpecialist) && data.length > 0) {
+        const userIds = [...new Set(data.map(a => a.user_id).filter(Boolean))] as string[];
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, full_name")
           .in("id", userIds);
-        
+
         const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
-        return data.map(a => ({ ...a, profiles: { full_name: profileMap.get(a.user_id) || "Unknown" } })) as Appointment[];
+        return data.map(a => ({
+          ...a,
+          profiles: { full_name: (a.user_id ? profileMap.get(a.user_id) : null) || a.guest_name || "Unknown" },
+        })) as Appointment[];
       }
-      
+
       return data as Appointment[];
     },
     enabled: !!user,
@@ -228,7 +240,7 @@ export default function Dashboard() {
                     <p className="text-lg font-semibold">
                       {nextAppointment.services.name}
                     </p>
-                    {isAdmin && nextAppointment.profiles?.full_name && (
+                    {(isAdmin || isSpecialist) && nextAppointment.profiles?.full_name && (
                       <p className="text-white/80 text-sm">{t("dashboard.client")}: {nextAppointment.profiles.full_name}</p>
                     )}
                     <div className="flex items-center gap-4 text-white/70 text-sm">
@@ -256,10 +268,12 @@ export default function Dashboard() {
                   <p className="text-muted-foreground mb-4">
                     {t("dashboard.noUpcoming")}
                   </p>
-                  <Button variant="hero" onClick={() => navigate("/book")}>
-                    <Plus className="h-4 w-4" />
-                    {t("dashboard.bookNow")}
-                  </Button>
+                  {!isSpecialist && (
+                    <Button variant="hero" onClick={() => navigate("/book")}>
+                      <Plus className="h-4 w-4" />
+                      {t("dashboard.bookNow")}
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -274,7 +288,7 @@ export default function Dashboard() {
               <Button
                 variant="hero"
                 className="w-full justify-start"
-                onClick={() => navigate("/book")}
+                onClick={() => (isSpecialist && !isAdmin ? setBookDialogOpen(true) : navigate("/book"))}
               >
                 <Plus className="h-4 w-4" />
                 {t("dashboard.bookNew")}
@@ -365,6 +379,16 @@ export default function Dashboard() {
           )
         )}
       </main>
+
+      {isSpecialist && (
+        <AdminBookAppointment
+          open={bookDialogOpen}
+          onOpenChange={(open) => {
+            setBookDialogOpen(open);
+            if (!open) refetch();
+          }}
+        />
+      )}
     </div>
   );
 }
