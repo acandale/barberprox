@@ -13,11 +13,12 @@ export function ServicesSection() {
   const { t } = useLanguage();
 
   const { data: services = [], isLoading } = useQuery({
-    queryKey: ["admin-services"],
+    queryKey: ["landing-services"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("services")
-        .select("*")
+        .select("*, specialists!inner(is_active)")
+        .eq("specialists.is_active", true)
         .order("price", { ascending: false });
 
       if (error) throw error;
