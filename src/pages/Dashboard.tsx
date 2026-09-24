@@ -268,10 +268,12 @@ export default function Dashboard() {
                   <p className="text-muted-foreground mb-4">
                     {t("dashboard.noUpcoming")}
                   </p>
-                  <Button variant="hero" onClick={() => navigate("/book")}>
-                    <Plus className="h-4 w-4" />
-                    {t("dashboard.bookNow")}
-                  </Button>
+                  {!isSpecialist && (
+                    <Button variant="hero" onClick={() => navigate("/book")}>
+                      <Plus className="h-4 w-4" />
+                      {t("dashboard.bookNow")}
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
