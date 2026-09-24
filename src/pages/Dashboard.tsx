@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isFuture, isToday, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { AdminBookAppointment } from "@/components/admin/AdminBookAppointment";
 
 interface Appointment {
   id: string;
@@ -17,6 +18,8 @@ interface Appointment {
   end_time: string;
   status: string;
   user_id?: string;
+  guest_name?: string | null;
+  guest_phone?: string | null;
   services: {
     name: string;
     duration_minutes: number;
