@@ -44,10 +44,10 @@ export default function Dashboard() {
   }, [user, authLoading, navigate]);
 
   const { data: appointments = [], isLoading: appointmentsLoading, refetch } = useQuery({
-    queryKey: ["my-appointments", user?.id, isAdmin],
+    queryKey: ["my-appointments", user?.id, isAdmin, isSpecialist, specialistId],
     queryFn: async () => {
       if (!user) return [];
-      
+
       let query = supabase
         .from("appointments")
         .select(`
@@ -56,6 +56,8 @@ export default function Dashboard() {
           end_time,
           status,
           user_id,
+          guest_name,
+          guest_phone,
           services (
             name,
             duration_minutes,
@@ -64,24 +66,30 @@ export default function Dashboard() {
         `)
         .order("start_time", { ascending: true });
 
-      if (!isAdmin) {
+      if (isSpecialist && !isAdmin) {
+        if (!specialistId) return [];
+        query = query.eq("specialist_id", specialistId);
+      } else if (!isAdmin) {
         query = query.eq("user_id", user.id);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      
-      if (isAdmin && data.length > 0) {
-        const userIds = [...new Set(data.map(a => a.user_id))];
+
+      if ((isAdmin || isSpecialist) && data.length > 0) {
+        const userIds = [...new Set(data.map(a => a.user_id).filter(Boolean))] as string[];
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, full_name")
           .in("id", userIds);
-        
+
         const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
-        return data.map(a => ({ ...a, profiles: { full_name: profileMap.get(a.user_id) || "Unknown" } })) as Appointment[];
+        return data.map(a => ({
+          ...a,
+          profiles: { full_name: (a.user_id ? profileMap.get(a.user_id) : null) || a.guest_name || "Unknown" },
+        })) as Appointment[];
       }
-      
+
       return data as Appointment[];
     },
     enabled: !!user,
