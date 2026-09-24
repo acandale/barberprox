@@ -240,7 +240,7 @@ export default function Dashboard() {
                     <p className="text-lg font-semibold">
                       {nextAppointment.services.name}
                     </p>
-                    {isAdmin && nextAppointment.profiles?.full_name && (
+                    {(isAdmin || isSpecialist) && nextAppointment.profiles?.full_name && (
                       <p className="text-white/80 text-sm">{t("dashboard.client")}: {nextAppointment.profiles.full_name}</p>
                     )}
                     <div className="flex items-center gap-4 text-white/70 text-sm">
