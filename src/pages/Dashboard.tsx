@@ -255,7 +255,7 @@ export default function Dashboard() {
                   <Button
                     variant="hero-outline"
                     size="sm"
-                    onClick={() => handleCancelAppointment(nextAppointment.id)}
+                    onClick={() => setConfirmCancelId(nextAppointment.id)}
                   >
                     {t("dashboard.cancelAppointment")}
                   </Button>
@@ -334,7 +334,7 @@ export default function Dashboard() {
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive"
-                        onClick={() => handleCancelAppointment(apt.id)}
+                        onClick={() => setConfirmCancelId(apt.id)}
                       >
                         {t("dashboard.cancel")}
                       </Button>
@@ -367,7 +367,7 @@ export default function Dashboard() {
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive"
-                        onClick={() => handleCancelAppointment(apt.id)}
+                        onClick={() => setConfirmCancelId(apt.id)}
                       >
                         {t("dashboard.cancel")}
                       </Button>
