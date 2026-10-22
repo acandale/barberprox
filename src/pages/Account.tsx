@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ export default function Account() {
   const { user, profile, isLoading, refreshProfile } = useAuth();
   const { language } = useLanguage();
   const ro = language === "ro";
+  const navigate = useNavigate();
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [phone, setPhone] = useState("");
@@ -55,7 +57,17 @@ export default function Account() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto px-4 py-10 max-w-lg">
-        <h1 className="text-3xl font-bold mb-8 text-foreground">{ro ? "Detalii cont" : "Account details"}</h1>
+        <div className="flex items-center gap-3 mb-8">
+          <button
+            type="button"
+            onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/dashboard"))}
+            aria-label={ro ? "Înapoi" : "Back"}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:bg-muted"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-3xl font-bold text-foreground">{ro ? "Detalii cont" : "Account details"}</h1>
+        </div>
         <div className="space-y-5">
           <div className="space-y-2">
             <Label>{ro ? "Nume" : "Last name"}</Label>
