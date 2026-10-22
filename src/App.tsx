@@ -13,6 +13,8 @@ import Booking from "./pages/Booking";
 import Admin from "./pages/Admin";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
+import Account from "./pages/Account";
+import MyAppointments from "./pages/MyAppointments";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
@@ -35,6 +37,8 @@ const App = () => (
                 <Route path="/book" element={<Booking />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/install" element={<Install />} />
+                <Route path="/account" element={<Account />} />
+                <Route path="/my-appointments" element={<MyAppointments />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AuthProvider>

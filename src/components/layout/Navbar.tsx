@@ -97,6 +97,16 @@ export function Navbar() {
                   <DropdownMenuItem onClick={() => navigate("/dashboard")} className="cursor-pointer hover:bg-white/10 gap-2">
                     <Calendar className="h-4 w-4" /> {t("nav.dashboard")}
                   </DropdownMenuItem>
+                  {!isAdmin && !isSpecialist && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate("/account")} className="cursor-pointer hover:bg-white/10 gap-2">
+                        <User className="h-4 w-4" /> {language === "ro" ? "Detalii cont" : "Account details"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/my-appointments")} className="cursor-pointer hover:bg-white/10 gap-2">
+                        <Calendar className="h-4 w-4" /> {language === "ro" ? "Programări" : "Appointments"}
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate("/admin")} className="cursor-pointer hover:bg-white/10 gap-2 text-purple-light">
                       <Settings className="h-4 w-4" /> {t("nav.adminPanel")}
@@ -151,6 +161,16 @@ export function Navbar() {
                   <Link to="/dashboard" className="text-lg font-semibold text-white/90" onClick={() => setMobileMenuOpen(false)}>
                     {t("nav.dashboard")}
                   </Link>
+                  {!isAdmin && !isSpecialist && (
+                    <>
+                      <Link to="/account" className="text-lg font-semibold text-white/90" onClick={() => setMobileMenuOpen(false)}>
+                        {language === "ro" ? "Detalii cont" : "Account details"}
+                      </Link>
+                      <Link to="/my-appointments" className="text-lg font-semibold text-white/90" onClick={() => setMobileMenuOpen(false)}>
+                        {language === "ro" ? "Programări" : "Appointments"}
+                      </Link>
+                    </>
+                  )}
                   {(isAdmin || isSpecialist) && (
                     <Link to="/admin" className="text-lg font-semibold text-purple-light" onClick={() => setMobileMenuOpen(false)}>
                       <Settings className="h-5 w-5 inline mr-2" /> {isAdmin ? t("nav.adminPanel") : t("nav.specialistPanel")}
