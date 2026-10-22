@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -23,6 +24,9 @@ export default function MyAppointments() {
   const { data: salon } = useSalonSettings();
   const ro = language === "ro";
   const locale = ro ? roLocale : enUS;
+  const PAGE = 20;
+  const [upPage, setUpPage] = useState(1);
+  const [pastPage, setPastPage] = useState(1);
 
   const { data: appts = [], isLoading: loading } = useQuery({
     queryKey: ["my-appointments", user?.id],
@@ -55,13 +59,29 @@ export default function MyAppointments() {
     return s.charAt(0).toUpperCase() + s.slice(1);
   };
 
+  const Pager = ({ page, total, set }: { page: number; total: number; set: (n: number) => void }) => {
+    const pages = Math.ceil(total / PAGE);
+    if (pages <= 1) return null;
+    return (
+      <div className="flex items-center justify-center gap-3 mt-6">
+        <button className="px-3 py-1 rounded border border-border text-sm disabled:opacity-40" disabled={page <= 1} onClick={() => { set(page - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          {ro ? "Înapoi" : "Previous"}
+        </button>
+        <span className="text-sm text-muted-foreground">{ro ? "Pagina" : "Page"} {page} / {pages}</span>
+        <button className="px-3 py-1 rounded border border-border text-sm disabled:opacity-40" disabled={page >= pages} onClick={() => { set(page + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          {ro ? "Înainte" : "Next"}
+        </button>
+      </div>
+    );
+  };
+
   const Card = ({ a }: { a: Appt }) => {
     const start = new Date(a.start_time);
     const end = new Date(a.end_time);
     const mins = Math.round((end.getTime() - start.getTime()) / 60000);
     return (
       <div className="rounded-lg bg-card border border-border shadow-sm p-4">
-        <span className="inline-block text-xs font-semibold px-2 py-1 rounded bg-muted text-muted-foreground">
+        <span className={`inline-block text-xs font-semibold px-2 py-1 rounded ${a.status === "cancelled" ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground"}`}>
           {statusLabel(a)}
         </span>
         <h3 className="text-lg font-bold mt-1 text-foreground">{dateLabel(start)}</h3>
@@ -97,8 +117,9 @@ export default function MyAppointments() {
                   {ro ? "Viitoare" : "Upcoming"} ({upcoming.length})
                 </h2>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {upcoming.map((a) => <Card key={a.id} a={a} />)}
+                  {upcoming.slice((upPage - 1) * PAGE, upPage * PAGE).map((a) => <Card key={a.id} a={a} />)}
                 </div>
+                <Pager page={upPage} total={upcoming.length} set={setUpPage} />
               </section>
             )}
             {past.length > 0 && (
@@ -107,8 +128,9 @@ export default function MyAppointments() {
                   {ro ? "În trecut" : "Past"} ({past.length})
                 </h2>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {past.map((a) => <Card key={a.id} a={a} />)}
+                  {past.slice((pastPage - 1) * PAGE, pastPage * PAGE).map((a) => <Card key={a.id} a={a} />)}
                 </div>
+                <Pager page={pastPage} total={past.length} set={setPastPage} />
               </section>
             )}
           </>
