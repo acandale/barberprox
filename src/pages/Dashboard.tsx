@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useTranslation } from "@/hooks/useLanguage";
+import { useLanguage } from "@/hooks/useLanguage";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,9 @@ export default function Dashboard() {
   const { user, profile, isLoading: authLoading, isAdmin, isSpecialist, specialistId } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useLanguage();
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const ro = language === "ro";
   const [bookDialogOpen, setBookDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -389,6 +392,29 @@ export default function Dashboard() {
           }}
         />
       )}
+
+      <AlertDialog open={!!confirmCancelId} onOpenChange={(o) => !o && setConfirmCancelId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{ro ? "Anulați programarea?" : "Cancel appointment?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {ro ? "Această acțiune nu poate fi anulată." : "This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{ro ? "Nu" : "No"}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (confirmCancelId) handleCancelAppointment(confirmCancelId);
+                setConfirmCancelId(null);
+              }}
+            >
+              {ro ? "Da, anulează" : "Yes, cancel"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
