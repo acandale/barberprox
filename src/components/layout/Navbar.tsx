@@ -1,4 +1,4 @@
-import moodLogo from "@/assets/mood_logo.png.asset.json";
+import moodLogoSrc from "@/assets/mood_logo.png";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,7 +40,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-<img src={moodLogo.url} alt="Logo" className="h-10 w-10 rounded-lg object-cover" />
+<img src={moodLogoSrc} alt="Logo" className="h-10 w-10 rounded-lg object-cover" />
             <span className="font-bold text-xl text-white tracking-tight">
               {salonSettings?.salon_name || "BarberPro"}
             </span>
