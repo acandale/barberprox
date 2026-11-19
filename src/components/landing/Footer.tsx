@@ -1,3 +1,4 @@
+import moodLogo from "@/assets/mood_logo.png.asset.json";
 import { Link } from "react-router-dom";
 import { Scissors, MapPin, Phone, Mail, Clock } from "lucide-react";
 import { useSalonSettings } from "@/hooks/useSalonSettings";
@@ -61,9 +62,7 @@ export function Footer() {
           {/* Brand */}
           <div>
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-purple">
-                <Scissors className="h-5 w-5 text-white" />
-              </div>
+<img src={moodLogo.url} alt="Logo" className="h-10 w-10 rounded-lg object-cover" />
               <span className="font-bold text-xl">{salonName}</span>
             </Link>
             <p className="text-white/60 text-sm leading-relaxed">
