@@ -15,6 +15,7 @@ import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 import Account from "./pages/Account";
 import MyAppointments from "./pages/MyAppointments";
+import ClientHistory from "./pages/ClientHistory";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/install" element={<Install />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/my-appointments" element={<MyAppointments />} />
+                <Route path="/client-history" element={<ClientHistory />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AuthProvider>

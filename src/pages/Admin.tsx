@@ -82,7 +82,7 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<AdminTab>("appointments");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -536,6 +536,15 @@ export default function AdminPage() {
                 </Button>
               </>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 ml-2"
+              onClick={() => navigate("/client-history")}
+            >
+              <Calendar className="h-4 w-4" />
+              {language === "ro" ? "Fișa clientului" : "Client file"}
+            </Button>
           </TabsList>
 
           {/* Appointments Tab */}
