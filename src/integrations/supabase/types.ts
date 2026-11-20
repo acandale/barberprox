@@ -339,6 +339,7 @@ export type Database = {
       }
       specialists: {
         Row: {
+          booking_slot_mode: string
           created_at: string | null
           id: string
           is_active: boolean
@@ -347,6 +348,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          booking_slot_mode?: string
           created_at?: string | null
           id?: string
           is_active?: boolean
@@ -355,6 +357,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          booking_slot_mode?: string
           created_at?: string | null
           id?: string
           is_active?: boolean
@@ -417,6 +420,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      set_specialist_booking_slot_mode: {
+        Args: { p_mode: string; p_specialist_id: string }
+        Returns: undefined
       }
     }
     Enums: {

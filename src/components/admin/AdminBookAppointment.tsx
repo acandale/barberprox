@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addMinutes, parseISO, setHours, setMinutes } from "date-fns";
+import { format, addMinutes } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { generateBookingSlots } from "@/lib/booking-slots";
 import { Loader2, ChevronsUpDown, Check } from "lucide-react";
 
 interface AdminBookAppointmentProps {
@@ -186,31 +187,21 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
     const dayOfWeek = date.getDay();
     const workHour = specialistWorkHours.find((wh: any) => wh.day_of_week === dayOfWeek);
     if (!workHour || !workHour.is_working_day) return [];
-    const slots: string[] = [];
-    const [startH, startM] = workHour.start_time.split(":").map(Number);
-    const [endH, endM] = workHour.end_time.split(":").map(Number);
-    let currentTime = setMinutes(setHours(date, startH), startM);
-    const endTime = setMinutes(setHours(date, endH), endM);
-    while (currentTime < endTime) {
-      const slotEnd = addMinutes(currentTime, selectedService.duration_minutes);
-      if (slotEnd <= endTime) {
-        const isConflict = existingAppointments.some((apt) => {
-          const aptStart = parseISO(apt.start_time); const aptEnd = parseISO(apt.end_time);
-          return (currentTime >= aptStart && currentTime < aptEnd) || (slotEnd > aptStart && slotEnd <= aptEnd) || (currentTime <= aptStart && slotEnd >= aptEnd);
-        });
-        const isBlocked = blockedTimes.some((bt) => {
-          const btStart = parseISO(bt.start_time); const btEnd = parseISO(bt.end_time);
-          return (currentTime >= btStart && currentTime < btEnd) || (slotEnd > btStart && slotEnd <= btEnd) || (currentTime <= btStart && slotEnd >= btEnd);
-        });
-        const isPast = currentTime < new Date();
-        if (!isConflict && !isBlocked && !isPast) slots.push(format(currentTime, "HH:mm"));
-      }
-      currentTime = addMinutes(currentTime, 15);
-    }
-    return slots;
+    return generateBookingSlots({
+      date,
+      start: workHour.start_time,
+      end: workHour.end_time,
+      duration: selectedService.duration_minutes,
+      mode: specialists.find(s => s.id === selectedSpecialistId)?.booking_slot_mode === "dynamic" ? "dynamic" : "fixed",
+      occupied: [...existingAppointments, ...blockedTimes],
+    });
   };
 
   const timeSlots = generateTimeSlots();
+
+  useEffect(() => {
+    if (selectedTime && !timeSlots.includes(selectedTime)) setSelectedTime(null);
+  }, [selectedTime, timeSlots]);
 
   const isDateDisabled = (date: Date) => {
     if (!selectedSpecialistId || !selectedService) return true;
@@ -244,7 +235,7 @@ export function AdminBookAppointment({ open, onOpenChange }: AdminBookAppointmen
   const bookMutation = useMutation({
     mutationFn: async () => {
       const hasClient = isNewClient ? newClientName.trim().length > 1 : !!selectedClientId;
-      if (!selectedService || !selectedDate || !selectedTime || !hasClient || !selectedSpecialistId) throw new Error("Missing fields");
+      if (!selectedService || !selectedDate || !selectedTime || !timeSlots.includes(selectedTime) || !hasClient || !selectedSpecialistId) throw new Error("Missing fields");
       const [hours, minutes] = selectedTime.split(":").map(Number);
       const startTime = new Date(selectedDate); startTime.setHours(hours, minutes, 0, 0);
       const endTime = addMinutes(startTime, selectedService.duration_minutes);

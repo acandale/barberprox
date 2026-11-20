@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addMinutes, parseISO, setHours, setMinutes } from "date-fns";
+import { format, addMinutes } from "date-fns";
 import { Scissors, Clock, ArrowLeft, ArrowRight, Loader2, Check, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { generateBookingSlots, BookingSlotMode } from "@/lib/booking-slots";
 
 interface Service {
   id: string;
@@ -26,6 +27,7 @@ interface Specialist {
   name: string;
   title: string;
   is_active: boolean;
+  booking_slot_mode: BookingSlotMode;
 }
 
 interface WorkHour {
@@ -127,25 +129,26 @@ export default function BookingPage() {
   });
 
   const { data: blockedTimes = [] } = useQuery({
-    queryKey: ["blocked-times", selectedDate?.toISOString()],
+    queryKey: ["blocked-times", selectedDate?.toISOString(), selectedSpecialist?.id],
     queryFn: async () => {
       if (!selectedDate) return [];
       const startOfDay = new Date(selectedDate); startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(selectedDate); endOfDay.setHours(23, 59, 59, 999);
-      const { data, error } = await supabase.from("blocked_times").select("start_time, end_time").gte("start_time", startOfDay.toISOString()).lte("start_time", endOfDay.toISOString());
+      const { data, error } = await supabase.from("blocked_times").select("start_time, end_time").eq("specialist_id", selectedSpecialist?.id || "").gte("start_time", startOfDay.toISOString()).lte("start_time", endOfDay.toISOString());
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedDate,
+    enabled: !!selectedDate && !!selectedSpecialist,
   });
 
   const { data: blockedDays = [] } = useQuery({
-    queryKey: ["blocked-days-booking"],
+    queryKey: ["blocked-days-booking", selectedSpecialist?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("blocked_days").select("start_date, end_date").gte("end_date", format(new Date(), "yyyy-MM-dd"));
+      const { data, error } = await supabase.from("blocked_days").select("start_date, end_date").eq("specialist_id", selectedSpecialist?.id || "").gte("end_date", format(new Date(), "yyyy-MM-dd"));
       if (error) throw error;
       return data;
     },
+    enabled: !!selectedSpecialist,
   });
 
   const generateTimeSlots = () => {
@@ -153,31 +156,21 @@ export default function BookingPage() {
     const dayOfWeek = selectedDate.getDay();
     const workHour = specialistWorkHours.find((wh) => wh.day_of_week === dayOfWeek);
     if (!workHour || !workHour.is_working_day) return [];
-    const slots: string[] = [];
-    const [startHour, startMin] = workHour.start_time.split(":").map(Number);
-    const [endHour, endMin] = workHour.end_time.split(":").map(Number);
-    let currentTime = setMinutes(setHours(selectedDate, startHour), startMin);
-    const endTime = setMinutes(setHours(selectedDate, endHour), endMin);
-    while (currentTime < endTime) {
-      const slotEnd = addMinutes(currentTime, selectedService.duration_minutes);
-      if (slotEnd <= endTime) {
-        const isConflict = existingAppointments.some((apt) => {
-          const aptStart = parseISO(apt.start_time); const aptEnd = parseISO(apt.end_time);
-          return (currentTime >= aptStart && currentTime < aptEnd) || (slotEnd > aptStart && slotEnd <= aptEnd) || (currentTime <= aptStart && slotEnd >= aptEnd);
-        });
-        const isBlocked = blockedTimes.some((bt) => {
-          const btStart = parseISO(bt.start_time); const btEnd = parseISO(bt.end_time);
-          return (currentTime >= btStart && currentTime < btEnd) || (slotEnd > btStart && slotEnd <= btEnd) || (currentTime <= btStart && slotEnd >= btEnd);
-        });
-        const isPast = currentTime < new Date();
-        if (!isConflict && !isBlocked && !isPast) { slots.push(format(currentTime, "HH:mm")); }
-      }
-      currentTime = addMinutes(currentTime, 15);
-    }
-    return slots;
+    return generateBookingSlots({
+      date: selectedDate,
+      start: workHour.start_time,
+      end: workHour.end_time,
+      duration: selectedService.duration_minutes,
+      mode: specialists.find(s => s.id === selectedSpecialist.id)?.booking_slot_mode,
+      occupied: [...existingAppointments, ...blockedTimes],
+    });
   };
 
   const timeSlots = generateTimeSlots();
+
+  useEffect(() => {
+    if (selectedTime && !timeSlots.includes(selectedTime)) setSelectedTime(null);
+  }, [selectedTime, timeSlots]);
 
   const isDateDisabled = (date: Date) => {
     if (!selectedSpecialist) return true;
@@ -190,7 +183,7 @@ export default function BookingPage() {
   };
 
   const handleBooking = async () => {
-    if (!selectedService || !selectedDate || !selectedTime || !user || !selectedSpecialist) return;
+    if (!selectedService || !selectedDate || !selectedTime || !timeSlots.includes(selectedTime) || !user || !selectedSpecialist) return;
     setIsBooking(true);
     try {
       const [hours, minutes] = selectedTime.split(":").map(Number);

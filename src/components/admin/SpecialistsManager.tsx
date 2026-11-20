@@ -29,6 +29,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BlockedTimesCalendar } from "./BlockedTimesCalendar";
 import { VacationsManager } from "./VacationsManager";
+import { useLanguage } from "@/hooks/useLanguage";
+import { BookingSlotMode } from "@/lib/booking-slots";
 
 interface Specialist {
   id: string;
@@ -36,6 +38,7 @@ interface Specialist {
   title: string;
   is_active: boolean;
   user_id: string | null;
+  booking_slot_mode: BookingSlotMode;
 }
 
 interface SpecialistsManagerProps {
@@ -66,6 +69,8 @@ const DAYS_OF_WEEK = [
 export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManagerProps = {}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { language } = useLanguage();
+  const isRo = language === "ro";
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSpecialist, setEditingSpecialist] = useState<Specialist | null>(null);
@@ -154,6 +159,18 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
   }, [selectedSpecialistId]);
 
   // Specialist mutations
+  const saveSlotModeMutation = useMutation({
+    mutationFn: async ({ id, mode }: { id: string; mode: BookingSlotMode }) => {
+      const { error } = await supabase.rpc("set_specialist_booking_slot_mode", { p_specialist_id: id, p_mode: mode });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await Promise.all(["admin-specialists", "admin-specialists-all", "booking-specialists-all"].map(key => queryClient.invalidateQueries({ queryKey: [key] })));
+      toast({ title: isRo ? "Modul de programare a fost salvat" : "Booking mode saved" });
+    },
+    onError: () => toast({ title: isRo ? "Opțiunea nu a putut fi salvată" : "Could not save booking mode", variant: "destructive" }),
+  });
+
   const createMutation = useMutation({
     mutationFn: async () => {
       const { data: specialist, error } = await supabase
@@ -453,6 +470,20 @@ export function SpecialistsManager({ restrictToSpecialistId }: SpecialistsManage
             <CardDescription>Servicii și program de lucru</CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="space-y-2 mb-6 max-w-lg">
+              <Label htmlFor="booking-slot-mode">{isRo ? "Sloturi programabile" : "Booking slots"}</Label>
+              <Select
+                value={selectedSpecialist.booking_slot_mode || "fixed"}
+                disabled={saveSlotModeMutation.isPending}
+                onValueChange={(mode: BookingSlotMode) => saveSlotModeMutation.mutate({ id: selectedSpecialist.id, mode })}
+              >
+                <SelectTrigger id="booking-slot-mode"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dynamic">{isRo ? "Dinamice — după durata serviciului" : "Dynamic — by service duration"}</SelectItem>
+                  <SelectItem value="fixed">{isRo ? "Fixe — la fiecare 15 minute" : "Fixed — every 15 minutes"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Tabs defaultValue="services">
               <TabsList className="mb-4 flex-wrap h-auto gap-1">
                 <TabsTrigger value="services" className="flex items-center gap-2">
