@@ -110,7 +110,7 @@ export default function ClientHistory() {
                   <button key={c.key} onClick={() => { setSelected(c.key); setPage(1); setFilter("all"); }}
                     className={`w-full text-left rounded-md px-3 py-2 text-sm ${selected === c.key ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
                     <div className="font-medium">{c.name}</div>
-                    <div className="text-xs opacity-75">{c.phone} · {c.count} {ro ? "programări" : "appointments"}</div>
+                    <div className="text-xs opacity-75">{c.phone ? `${c.phone} · ` : ""}{c.count} {c.count === 1 ? (ro ? "programare" : "appointment") : (ro ? "programări" : "appointments")}</div>
                   </button>
                 ))}
               </div>
